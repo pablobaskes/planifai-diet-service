@@ -1,6 +1,6 @@
 package com.planing.diet_service.MealSlot.infrastructure.output.jpa.entity;
 
-import com.planing.diet_service.Diet.infrastructure.output.jpa.entity.DietDayEntity;
+import com.planing.diet_service.DietDay.infrastructure.output.jpa.entity.DietDayEntity;
 import com.planing.diet_service.MealSlot.domain.utils.MealType;
 import jakarta.persistence.*;
 import lombok.Getter;
