@@ -1,7 +1,6 @@
 package com.planing.diet_service.Recipe.infrastructure.output.jpa.entity;
 
-import com.planing.diet_service.FoodPortion.domain.model.FoodPortion;
-import com.planing.diet_service.Recipe.domain.model.NutritionSummary;
+import com.planing.diet_service.FoodPortion.infrastructure.output.jpa.entity.FoodPortionEmbedded;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,8 +27,8 @@ public class RecipeEntity {
             name = "recipe_ingredients",
             joinColumns = @JoinColumn(name = "recipe_id")
     )
-    private List<FoodPortion> ingredients = new ArrayList<>();
+    private List<FoodPortionEmbedded> ingredients = new ArrayList<>();
 
     @Embedded
-    private NutritionSummary nutritionSummary;
+    private NutritionSummaryEmbedded nutritionSummary;
 }

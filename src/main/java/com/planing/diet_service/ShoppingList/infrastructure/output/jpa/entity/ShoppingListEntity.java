@@ -1,6 +1,6 @@
 package com.planing.diet_service.ShoppingList.infrastructure.output.jpa.entity;
 
-import com.planing.diet_service.FoodPortion.domain.model.FoodPortion;
+import com.planing.diet_service.FoodPortion.infrastructure.output.jpa.entity.FoodPortionEmbedded;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,5 +30,5 @@ public class ShoppingListEntity {
             name = "shopping_list_items",
             joinColumns = @JoinColumn(name = "shopping_list_id")
     )
-    private List<FoodPortion> items = new ArrayList<>();
+    private List<FoodPortionEmbedded> items = new ArrayList<>();
 }

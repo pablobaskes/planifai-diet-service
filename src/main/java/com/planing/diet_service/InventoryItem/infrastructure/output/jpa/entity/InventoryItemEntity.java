@@ -1,6 +1,6 @@
 package com.planing.diet_service.InventoryItem.infrastructure.output.jpa.entity;
 
-import com.planing.diet_service.FoodPortion.domain.model.FoodPortion;
+import com.planing.diet_service.FoodPortion.infrastructure.output.jpa.entity.FoodPortionEmbedded;
 import com.planing.diet_service.InventoryItem.domain.model.StorageLocation;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -19,7 +19,7 @@ public class InventoryItemEntity {
     private Long id;
 
     @Embedded
-    private FoodPortion portion;
+    private FoodPortionEmbedded portion;
 
     @Enumerated(EnumType.STRING)
     private StorageLocation location;

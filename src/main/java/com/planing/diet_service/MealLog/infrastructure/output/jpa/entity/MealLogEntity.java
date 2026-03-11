@@ -1,6 +1,6 @@
 package com.planing.diet_service.MealLog.infrastructure.output.jpa.entity;
 
-import com.planing.diet_service.FoodPortion.domain.model.FoodPortion;
+import com.planing.diet_service.FoodPortion.infrastructure.output.jpa.entity.FoodPortionEmbedded;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,7 +24,7 @@ public class MealLogEntity {
     private LocalDateTime consumedAt;
 
     @Embedded
-    private FoodPortion portion;
+    private FoodPortionEmbedded portion;
 
     private String notes;
 }
