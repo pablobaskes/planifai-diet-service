@@ -1,0 +1,1069 @@
+openapi: 3.0.3
+info:
+  title: Diet Manager API - Recipes, Foods, Inventory & Shopping
+  description: API para gestión de recetas, alimentos, despensa y lista de la compra
+  version: 1.0.0
+
+tags:
+  - name: Recipes
+    description: Gestión de recetas personales
+  - name: Foods
+    description: Catálogo de alimentos con información nutricional
+  - name: Inventory
+    description: Gestión de la despensa actual
+  - name: ShoppingLists
+    description: Listas de la compra
+  - name: Diets
+    description: Gestión de dietas
+
+paths:
+
+
+  # ─────────────────────────────────────────
+  # DIETS
+  # ─────────────────────────────────────────
+  /api/v1/diets:
+    get:
+      tags: [ Diets ]
+      operationId: getAllDiets
+      summary: Listar todas las dietas
+      responses:
+        '200':
+          description: Lista de dietas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DietResponse'
+
+    post:
+      tags: [ Diets ]
+      operationId: createDiet
+      summary: Crear una nueva dieta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DietRequest'
+      responses:
+        '201':
+          description: Dieta creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/diets/{dietId}:
+    parameters:
+      - $ref: '#/components/parameters/DietId'
+
+    get:
+      tags: [ Diets ]
+      operationId: getDietById
+      summary: Obtener una dieta por ID
+      responses:
+        '200':
+          description: Dieta encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [ Diets ]
+      operationId: updateDiet
+      summary: Actualizar una dieta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DietRequest'
+      responses:
+        '200':
+          description: Dieta actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [ Diets ]
+      operationId: deleteDiet
+      summary: Eliminar una dieta
+      responses:
+        '204':
+          description: Dieta eliminada
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────────────────
+  # DIET DAYS (anidado bajo dieta)
+  # ─────────────────────────────────────────
+  /api/v1/diets/{dietId}/days:
+    parameters:
+      - $ref: '#/components/parameters/DietId'
+
+    get:
+      tags: [ Diets ]
+      operationId: getDaysByDiet
+      summary: Listar los días de una dieta
+      responses:
+        '200':
+          description: Lista de días
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DietDayResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [ Diets ]
+      operationId: createDietDay
+      summary: Añadir un día a una dieta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DietDayRequest'
+      responses:
+        '201':
+          description: Día creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietDayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/diets/{dietId}/days/{dayId}:
+    parameters:
+      - $ref: '#/components/parameters/DietId'
+      - $ref: '#/components/parameters/DayId'
+
+    get:
+      tags: [ Diets ]
+      operationId: getDietDayById
+      summary: Obtener un día de dieta por ID
+      responses:
+        '200':
+          description: Día encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietDayResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [ Diets ]
+      operationId: updateDietDay
+      summary: Actualizar un día de dieta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DietDayRequest'
+      responses:
+        '200':
+          description: Día actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietDayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [ Diets ]
+      operationId: deleteDietDay
+      summary: Eliminar un día de dieta
+      responses:
+        '204':
+          description: Día eliminado
+        '404':
+          $ref: '#/components/responses/NotFound'
+  # ─────────────────────────────────────────
+  # RECIPES
+  # ─────────────────────────────────────────
+  /api/v1/recipes:
+    get:
+      tags: [ Recipes ]
+      operationId: getAllRecipes
+      summary: Listar todas las recetas
+      responses:
+        '200':
+          description: Lista de recetas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeResponse'
+
+    post:
+      tags: [ Recipes ]
+      operationId: createRecipe
+      summary: Crear una nueva receta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+      responses:
+        '201':
+          description: Receta creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/recipes/{recipeId}:
+    parameters:
+      - $ref: '#/components/parameters/RecipeId'
+
+    get:
+      tags: [ Recipes ]
+      operationId: getRecipeById
+      summary: Obtener una receta por ID
+      responses:
+        '200':
+          description: Receta encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [ Recipes ]
+      operationId: updateRecipe
+      summary: Actualizar una receta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+      responses:
+        '200':
+          description: Receta actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [ Recipes ]
+      operationId: deleteRecipe
+      summary: Eliminar una receta
+      responses:
+        '204':
+          description: Receta eliminada
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────────────────
+  # FOODS
+  # ─────────────────────────────────────────
+  /api/v1/foods:
+    get:
+      tags: [ Foods ]
+      operationId: getAllFoods
+      summary: Listar todos los alimentos
+      parameters:
+        - name: category
+          in: query
+          required: false
+          description: Filtrar por categoría
+          schema:
+            $ref: '#/components/schemas/FoodCategory'
+        - name: name
+          in: query
+          required: false
+          description: Buscar por nombre (contains, ignore case)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de alimentos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FoodResponse'
+
+    post:
+      tags: [ Foods ]
+      operationId: createFood
+      summary: Crear un nuevo alimento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FoodRequest'
+      responses:
+        '201':
+          description: Alimento creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/foods/{foodId}:
+    parameters:
+      - $ref: '#/components/parameters/FoodId'
+
+    get:
+      tags: [ Foods ]
+      operationId: getFoodById
+      summary: Obtener un alimento por ID
+      responses:
+        '200':
+          description: Alimento encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [ Foods ]
+      operationId: updateFood
+      summary: Actualizar un alimento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FoodRequest'
+      responses:
+        '200':
+          description: Alimento actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [ Foods ]
+      operationId: deleteFood
+      summary: Eliminar un alimento
+      responses:
+        '204':
+          description: Alimento eliminado
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────────────────
+  # INVENTORY
+  # ─────────────────────────────────────────
+  /api/v1/inventory:
+    get:
+      tags: [ Inventory ]
+      operationId: getAllInventoryItems
+      summary: Listar todos los items de la despensa
+      parameters:
+        - name: location
+          in: query
+          required: false
+          description: Filtrar por ubicación de almacenamiento
+          schema:
+            $ref: '#/components/schemas/StorageLocation'
+      responses:
+        '200':
+          description: Lista de items en despensa
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryItemResponse'
+
+    post:
+      tags: [ Inventory ]
+      operationId: createInventoryItem
+      summary: Añadir un item a la despensa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryItemRequest'
+      responses:
+        '201':
+          description: Item añadido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/inventory/{itemId}:
+    parameters:
+      - $ref: '#/components/parameters/ItemId'
+
+    get:
+      tags: [ Inventory ]
+      operationId: getInventoryItemById
+      summary: Obtener un item de la despensa por ID
+      responses:
+        '200':
+          description: Item encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [ Inventory ]
+      operationId: updateInventoryItem
+      summary: Actualizar un item de la despensa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryItemRequest'
+      responses:
+        '200':
+          description: Item actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [ Inventory ]
+      operationId: deleteInventoryItem
+      summary: Eliminar un item de la despensa
+      responses:
+        '204':
+          description: Item eliminado
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────────────────
+  # SHOPPING LISTS
+  # ─────────────────────────────────────────
+  /api/v1/shopping-lists:
+    get:
+      tags: [ ShoppingLists ]
+      operationId: getAllShoppingLists
+      summary: Listar todas las listas de la compra
+      responses:
+        '200':
+          description: Lista de listas de la compra
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShoppingListResponse'
+
+    post:
+      tags: [ ShoppingLists ]
+      operationId: createShoppingList
+      summary: Crear una nueva lista de la compra
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShoppingListRequest'
+      responses:
+        '201':
+          description: Lista creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/shopping-lists/{listId}:
+    parameters:
+      - $ref: '#/components/parameters/ListId'
+
+    get:
+      tags: [ ShoppingLists ]
+      operationId: getShoppingListById
+      summary: Obtener una lista de la compra por ID
+      responses:
+        '200':
+          description: Lista encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [ ShoppingLists ]
+      operationId: updateShoppingList
+      summary: Actualizar una lista de la compra
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShoppingListRequest'
+      responses:
+        '200':
+          description: Lista actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [ ShoppingLists ]
+      operationId: deleteShoppingList
+      summary: Eliminar una lista de la compra
+      responses:
+        '204':
+          description: Lista eliminada
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/shopping-lists/{listId}/items:
+    parameters:
+      - $ref: '#/components/parameters/ListId'
+
+    post:
+      tags: [ ShoppingLists ]
+      operationId: addItemToShoppingList
+      summary: Añadir un item a la lista de la compra
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FoodPortionDto'
+      responses:
+        '200':
+          description: Item añadido, lista actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [ ShoppingLists ]
+      operationId: removeItemFromShoppingList
+      summary: Eliminar un item de la lista de la compra por foodId
+      parameters:
+        - name: foodId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Item eliminado, lista actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ─────────────────────────────────────────
+# COMPONENTS
+# ─────────────────────────────────────────
+components:
+
+  parameters:
+    DietId:
+      name: dietId
+      in: path
+      required: true
+      description: ID de la dieta
+      schema:
+        type: integer
+        format: int64
+
+    DayId:
+      name: dayId
+      in: path
+      required: true
+      description: ID del día de dieta
+      schema:
+        type: integer
+        format: int64
+
+    RecipeId:
+      name: recipeId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    FoodId:
+      name: foodId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    ListId:
+      name: listId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  responses:
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: Datos inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+
+    # ── Enums ──────────────────────────────
+    MealType:
+      type: string
+      enum:
+        - BREAKFAST
+        - LUNCH
+        - DINNER
+        - SNACK
+    FoodCategory:
+      type: string
+      enum:
+        - FRUIT
+        - VEGETABLE
+        - MEAT
+        - FISH
+        - DAIRY
+        - GRAIN
+        - LEGUME
+        - NUT
+        - OIL
+        - BEVERAGE
+        - OTHER
+      description: Categoría del alimento
+
+    StorageLocation:
+      type: string
+      enum:
+        - FRIDGE
+        - FREEZER
+        - PANTRY
+        - OTHER
+      description: Ubicación de almacenamiento en la despensa
+
+    MeasureUnit:
+      type: string
+      enum:
+        - G
+        - KG
+        - ML
+        - L
+        - UNIT
+        - TBSP
+        - TSP
+        - CUP
+      description: Unidad de medida
+
+    # ── Shared Embedded ────────────────────
+    FoodPortionDto:
+      type: object
+      description: Porción de un alimento con cantidad y unidad (equivale a FoodPortionEmbedded)
+      required:
+        - foodId
+        - quantity
+        - unit
+      properties:
+        foodId:
+          type: integer
+          format: int64
+          description: ID del alimento en el catálogo
+          example: 5
+        foodName:
+          type: string
+          description: Nombre del alimento (solo en responses)
+          readOnly: true
+          example: Pechuga de pollo
+        quantity:
+          type: number
+          format: double
+          example: 150.0
+        unit:
+          $ref: '#/components/schemas/MeasureUnit'
+
+
+    # ── MealSlot ──────────────────────────
+    MealSlotResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 100
+        type:
+          $ref: '#/components/schemas/MealType'
+        recipeId:
+          type: integer
+          format: int64
+          nullable: true
+          example: 42
+        dietDayId:
+          type: integer
+          format: int64
+          example: 10
+
+    NutritionSummaryDto:
+      type: object
+      description: Resumen nutricional calculado (equivale a NutritionSummaryEmbedded)
+      properties:
+        totalCalories:
+          type: number
+          format: double
+          example: 320.5
+        totalProtein:
+          type: number
+          format: double
+          example: 42.0
+        totalCarbs:
+          type: number
+          format: double
+          example: 18.0
+        totalFat:
+          type: number
+          format: double
+          example: 8.5
+
+
+
+    # ── Food ──────────────────────────────
+    FoodRequest:
+      type: object
+      required:
+        - name
+        - category
+      properties:
+        name:
+          type: string
+          example: Pechuga de pollo
+        category:
+          $ref: '#/components/schemas/FoodCategory'
+        caloriesPer100g:
+          type: number
+          format: double
+          example: 165.0
+        proteinPer100g:
+          type: number
+          format: double
+          example: 31.0
+        carbsPer100g:
+          type: number
+          format: double
+          example: 0.0
+        fatPer100g:
+          type: number
+          format: double
+          example: 3.6
+
+    # ── Diet ──────────────────────────────
+    DietRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Dieta de primavera
+        description:
+          type: string
+          example: Dieta equilibrada para primavera
+        caloriesTarget:
+          type: integer
+          example: 2000
+        initDate:
+          type: string
+          format: date
+          example: 2025-04-01
+        endDate:
+          type: string
+          format: date
+          example: 2025-06-30
+
+    DietResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: Dieta de primavera
+        description:
+          type: string
+          example: Dieta equilibrada para primavera
+        caloriesTarget:
+          type: integer
+          example: 2000
+        initDate:
+          type: string
+          format: date
+          example: 2025-04-01
+        endDate:
+          type: string
+          format: date
+          example: 2025-06-30
+        totalDays:
+          type: integer
+          description: Número de días registrados
+          example: 7
+
+    # ── DietDay ───────────────────────────
+    DietDayRequest:
+      type: object
+      required:
+        - date
+      properties:
+        date:
+          type: string
+          format: date
+          example: 2025-04-07
+    FoodResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: Pechuga de pollo
+        category:
+          $ref: '#/components/schemas/FoodCategory'
+        caloriesPer100g:
+          type: number
+          format: double
+          example: 165.0
+        proteinPer100g:
+          type: number
+          format: double
+          example: 31.0
+        carbsPer100g:
+          type: number
+          format: double
+          example: 0.0
+        fatPer100g:
+          type: number
+          format: double
+          example: 3.6
+
+    # ── Recipe ────────────────────────────
+    RecipeRequest:
+      type: object
+      required:
+        - name
+        - ingredients
+      properties:
+        name:
+          type: string
+          example: Ensalada de pollo
+        ingredients:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/FoodPortionDto'
+
+    RecipeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        name:
+          type: string
+          example: Ensalada de pollo
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/FoodPortionDto'
+        nutritionSummary:
+          $ref: '#/components/schemas/NutritionSummaryDto'
+
+    # ── Inventory ─────────────────────────
+    InventoryItemRequest:
+      type: object
+      required:
+        - portion
+        - location
+      properties:
+        portion:
+          $ref: '#/components/schemas/FoodPortionDto'
+        location:
+          $ref: '#/components/schemas/StorageLocation'
+
+    InventoryItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 20
+        portion:
+          $ref: '#/components/schemas/FoodPortionDto'
+        location:
+          $ref: '#/components/schemas/StorageLocation'
+
+    # ── ShoppingList ──────────────────────
+    ShoppingListRequest:
+      type: object
+      required:
+        - userId
+        - weekStart
+      properties:
+        userId:
+          type: integer
+          format: int64
+          example: 1
+        weekStart:
+          type: string
+          format: date
+          example: 2025-04-07
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FoodPortionDto'
+
+    ShoppingListResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 3
+        userId:
+          type: integer
+          format: int64
+          example: 1
+        weekStart:
+          type: string
+          format: date
+          example: 2025-04-07
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FoodPortionDto'
+        totalItems:
+          type: integer
+          description: Número total de items en la lista
+          example: 12
+
+    DietDayResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        date:
+          type: string
+          format: date
+          example: 2025-04-07
+        dietId:
+          type: integer
+          format: int64
+          example: 1
+        mealSlots:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealSlotResponse'
+
+
+
+    # ── Error ─────────────────────────────
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 404
+        error:
+          type: string
+          example: Not Found
+        message:
+          type: string
+          example: Receta con ID 10 no encontrada
+        timestamp:
+          type: string
+          format: date-time
