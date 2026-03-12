@@ -1,5 +1,11 @@
 package com.planing.diet_service.Food.domain.model;
 
+import lombok.*;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Data
 public class Food {
     private Long id;
     private String name;

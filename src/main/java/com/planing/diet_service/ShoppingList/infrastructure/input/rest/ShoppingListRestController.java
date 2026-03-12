@@ -4,10 +4,16 @@ import com.planing.diet.api.ShoppingListsApi;
 import com.planing.diet.dto.FoodPortionDto;
 import com.planing.diet.dto.ShoppingListRequest;
 import com.planing.diet.dto.ShoppingListResponse;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@RestController
+@AllArgsConstructor
+@Slf4j
 public class ShoppingListRestController implements ShoppingListsApi {
     @Override
     public ResponseEntity<ShoppingListResponse> addItemToShoppingList(Long listId, FoodPortionDto foodPortionDto) {

@@ -5,10 +5,16 @@ import com.planing.diet.dto.DietDayRequest;
 import com.planing.diet.dto.DietDayResponse;
 import com.planing.diet.dto.DietRequest;
 import com.planing.diet.dto.DietResponse;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@RestController
+@AllArgsConstructor
+@Slf4j
 public class DietRestController implements DietsApi {
 
     @Override

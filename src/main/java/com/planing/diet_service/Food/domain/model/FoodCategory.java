@@ -1,13 +1,15 @@
 package com.planing.diet_service.Food.domain.model;
 
 public enum FoodCategory {
-
-    MEAT,
-    VEGETABLE,
     FRUIT,
-    GRAIN,
+    VEGETABLE,
+    MEAT,
+    FISH,
     DAIRY,
+    GRAIN,
     LEGUME,
+    NUT,
+    OIL,
+    BEVERAGE,
     OTHER
-
 }
