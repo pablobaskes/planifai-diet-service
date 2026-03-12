@@ -11,11 +11,11 @@ import lombok.Setter;
 @NoArgsConstructor
 public class NutritionSummaryEmbedded {
 
-    private Double calories;
+    private Double totalCalories;
 
-    private Double protein;
+    private Double totalProtein;
 
-    private Double carbs;
+    private Double totalCarbs;
 
-    private Double fat;
+    private Double totalFat;
 }

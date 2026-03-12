@@ -943,6 +943,8 @@ components:
           minItems: 1
           items:
             $ref: '#/components/schemas/FoodPortionDto'
+        nutritionSummary:
+          $ref: '#/components/schemas/NutritionSummaryDto'
 
     RecipeResponse:
       type: object
