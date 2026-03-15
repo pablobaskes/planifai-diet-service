@@ -20,6 +20,7 @@ public class RecipeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "name")
     private String name;
 
     @ElementCollection
@@ -31,4 +32,12 @@ public class RecipeEntity {
 
     @Embedded
     private NutritionSummaryEmbedded nutritionSummary;
+
+    @ElementCollection
+    @CollectionTable(
+            name = "recipe_tags",
+            joinColumns = @JoinColumn(name = "recipe_id")
+    )
+    @Column(name = "tag")
+    private List<String> tags;
 }

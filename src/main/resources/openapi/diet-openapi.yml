@@ -945,6 +945,11 @@ components:
             $ref: '#/components/schemas/FoodPortionDto'
         nutritionSummary:
           $ref: '#/components/schemas/NutritionSummaryDto'
+        tags:
+          type: array
+          items:
+            type: string
+          example: [ "saludable", "rápida", "vegetariana" ]
 
     RecipeResponse:
       type: object
@@ -962,6 +967,11 @@ components:
             $ref: '#/components/schemas/FoodPortionDto'
         nutritionSummary:
           $ref: '#/components/schemas/NutritionSummaryDto'
+        tags:
+          type: array
+          items:
+            type: string
+          example: [ "saludable", "rápida", "vegetariana" ]
 
     # ── Inventory ─────────────────────────
     InventoryItemRequest:

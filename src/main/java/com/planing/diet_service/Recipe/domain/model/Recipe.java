@@ -17,4 +17,5 @@ public class Recipe {
     private String name;
     private List<FoodPortion> ingredients = new ArrayList<>();
     private NutritionSummaryEmbedded nutritionSummary;
+    private List<String> tags;
 }
