@@ -762,6 +762,11 @@ components:
           example: 150.0
         unit:
           $ref: '#/components/schemas/MeasureUnit'
+        weightPerUnit:
+          type: number
+          format: double
+          description: Peso en gramos por unidad. Solo aplica cuando unit es UNIT.
+          example: 60.0
 
 
     # ── MealSlot ──────────────────────────
@@ -943,13 +948,13 @@ components:
           minItems: 1
           items:
             $ref: '#/components/schemas/FoodPortionDto'
-        nutritionSummary:
-          $ref: '#/components/schemas/NutritionSummaryDto'
         tags:
           type: array
           items:
             type: string
           example: [ "saludable", "rápida", "vegetariana" ]
+        servings:
+          type: number
 
     RecipeResponse:
       type: object
@@ -972,6 +977,8 @@ components:
           items:
             type: string
           example: [ "saludable", "rápida", "vegetariana" ]
+        servings:
+          type: number
 
     # ── Inventory ─────────────────────────
     InventoryItemRequest:

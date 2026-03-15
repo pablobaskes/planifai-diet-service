@@ -40,4 +40,7 @@ public class RecipeEntity {
     )
     @Column(name = "tag")
     private List<String> tags;
+
+    @Column(name = "servings")
+    private Integer servings;
 }

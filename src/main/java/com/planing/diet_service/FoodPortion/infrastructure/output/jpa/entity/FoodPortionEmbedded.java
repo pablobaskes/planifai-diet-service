@@ -20,4 +20,6 @@ public class FoodPortionEmbedded {
 
     @Enumerated(EnumType.STRING)
     private Unit unit;
+
+    private Double weightPerUnit;
 }

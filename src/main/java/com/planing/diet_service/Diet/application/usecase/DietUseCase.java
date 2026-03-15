@@ -37,6 +37,7 @@ public class DietUseCase implements DietInputPort {
     @Override
     public Diet createDiet(Diet diet) {
         log.info("Creating diet: {}", diet.getName());
+
         return dietOutputPort.saveDiet(diet);
     }
 

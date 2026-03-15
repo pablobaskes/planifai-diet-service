@@ -16,7 +16,8 @@
 
 	<properties>
 		<java.version>25</java.version>
-		<!-- Paquetes generados -->
+		<maven.compiler.source>25</maven.compiler.source>
+		<maven.compiler.target>25</maven.compiler.target>
 		<openapi.api.package>com.planing.diet.api</openapi.api.package>
 		<openapi.model.package>com.planing.diet.dto</openapi.model.package>
 	</properties>
@@ -34,15 +35,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-
-		<!-- Swagger UI -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.8.16</version>
 		</dependency>
-
-		<!-- Necesario para las interfaces generadas por OpenAPI Generator -->
 		<dependency>
 			<groupId>io.swagger.core.v3</groupId>
 			<artifactId>swagger-annotations</artifactId>
@@ -53,7 +50,6 @@
 			<artifactId>jackson-databind-nullable</artifactId>
 			<version>0.2.6</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
@@ -96,6 +92,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
+					<source>25</source>
+					<target>25</target>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
@@ -136,39 +134,27 @@
 							<goal>generate</goal>
 						</goals>
 						<configuration>
-							<!-- Ruta al YAML -->
 							<inputSpec>${project.basedir}/src/main/resources/openapi/diet-openapi.yml</inputSpec>
-							<!-- Generador Spring (server-side) -->
 							<generatorName>spring</generatorName>
-							<!-- Paquetes de salida -->
 							<apiPackage>${openapi.api.package}</apiPackage>
 							<modelPackage>${openapi.model.package}</modelPackage>
-							<!-- No generar tests ni documentación extra -->
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateApiDocumentation>false</generateApiDocumentation>
 							<generateModelDocumentation>false</generateModelDocumentation>
 							<configOptions>
-								<!-- Solo interfaces, tú escribes los @RestController -->
 								<interfaceOnly>true</interfaceOnly>
-								<!-- Spring Boot 3 / Jakarta EE -->
 								<useSpringBoot3>true</useSpringBoot3>
-								<!-- Agrupa endpoints por tag (DietsApi, DietDaysApi…) -->
 								<useTags>true</useTags>
-								<!-- Fechas como LocalDate / LocalDateTime -->
 								<dateLibrary>java8</dateLibrary>
-								<!-- Evita wrapper Optional innecesario en los DTOs -->
 								<openApiNullable>false</openApiNullable>
-								<!-- Usa anotaciones Jakarta (@Valid, @NotNull…) -->
 								<useJakartaEe>true</useJakartaEe>
-								<!-- No genera @SpringBootApplication ni main class -->
 								<skipDefaultInterface>true</skipDefaultInterface>
 							</configOptions>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-
 		</plugins>
 	</build>
 
