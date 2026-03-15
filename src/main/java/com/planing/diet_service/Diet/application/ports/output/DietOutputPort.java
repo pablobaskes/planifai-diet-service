@@ -1,0 +1,26 @@
+package com.planing.diet_service.Diet.application.ports.output;
+
+
+import com.planing.diet_service.Diet.domain.model.Diet;
+import com.planing.diet_service.Diet.domain.model.DietDay;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface DietOutputPort {
+
+    // ── Diet ──────────────────────────────
+    List<Diet> findAllDiets();
+    Optional<Diet> findDietById(Long id);
+    Diet saveDiet(Diet diet);
+    void deleteDietById(Long id);
+    boolean dietExistsById(Long id);
+
+    // ── DietDay ───────────────────────────
+    List<DietDay> findDaysByDietId(Long dietId);
+    Optional<DietDay> findDietDayById(Long dayId);
+    DietDay saveDietDay(DietDay dietDay);
+    void deleteDietDayById(Long dayId);
+    boolean dietDayExistsById(Long dayId);
+}
+
