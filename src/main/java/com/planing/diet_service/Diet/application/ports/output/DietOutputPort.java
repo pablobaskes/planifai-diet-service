@@ -3,7 +3,10 @@ package com.planing.diet_service.Diet.application.ports.output;
 
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Diet.domain.model.DietDay;
+import com.planing.diet_service.MealSlot.domain.model.MealSlot;
+import com.planing.diet_service.MealSlot.domain.utils.MealType;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +18,7 @@ public interface DietOutputPort {
     Diet saveDiet(Diet diet);
     void deleteDietById(Long id);
     boolean dietExistsById(Long id);
+    List<Diet> findDietsByDateRange(LocalDate from, LocalDate to);
 
     // ── DietDay ───────────────────────────
     List<DietDay> findDaysByDietId(Long dietId);
@@ -22,5 +26,6 @@ public interface DietOutputPort {
     DietDay saveDietDay(DietDay dietDay);
     void deleteDietDayById(Long dayId);
     boolean dietDayExistsById(Long dayId);
+
 }
 

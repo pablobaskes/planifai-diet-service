@@ -4,6 +4,7 @@ import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Diet.domain.model.DietDay;
 
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface DietInputPort {
@@ -14,6 +15,7 @@ public interface DietInputPort {
     Diet createDiet(Diet diet);
     Diet updateDiet(Long id, Diet diet);
     void deleteDiet(Long id);
+    List<Diet> getDietsByDateRange(LocalDate from, LocalDate to);
 
     // ── DietDay ───────────────────────────
     List<DietDay> getDaysByDiet(Long dietId);

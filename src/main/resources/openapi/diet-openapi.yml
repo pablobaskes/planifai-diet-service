@@ -57,6 +57,40 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+  /api/v1/diets/range:
+    get:
+      tags: [ Diets ]
+      operationId: getDietsByDateRange
+      summary: Obtener dietas con sus días y comidas entre dos fechas
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Fecha inicio del rango (inclusive)
+          schema:
+            type: string
+            format: date
+            example: 2025-04-01
+        - name: to
+          in: query
+          required: true
+          description: Fecha fin del rango (inclusive)
+          schema:
+            type: string
+            format: date
+            example: 2025-04-07
+      responses:
+        '200':
+          description: Dietas encontradas en el rango con días y MealSlots completos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DietDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
   /api/v1/diets/{dietId}:
     parameters:
       - $ref: '#/components/parameters/DietId'
@@ -1068,7 +1102,62 @@ components:
           items:
             $ref: '#/components/schemas/MealSlotResponse'
 
+    DietDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: Dieta de primavera
+        description:
+          type: string
+          example: Dieta equilibrada para primavera
+        caloriesTarget:
+          type: integer
+          example: 2000
+        initDate:
+          type: string
+          format: date
+          example: 2025-04-01
+        endDate:
+          type: string
+          format: date
+          example: 2025-06-30
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/DietDayDetailResponse'
 
+    DietDayDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        date:
+          type: string
+          format: date
+          example: 2025-04-07
+        mealSlots:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealSlotDetailResponse'
+
+    MealSlotDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 100
+        type:
+          $ref: '#/components/schemas/MealType'
+        recipe:
+          $ref: '#/components/schemas/RecipeResponse'
 
     # ── Error ─────────────────────────────
     ErrorResponse:

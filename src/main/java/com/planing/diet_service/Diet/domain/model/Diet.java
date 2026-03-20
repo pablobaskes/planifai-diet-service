@@ -19,4 +19,16 @@ public class Diet {
     private LocalDate initDate;
     private LocalDate endDate;
     private List<DietDay> days = new ArrayList<>();
+
+    public void validate() {
+        if (initDate == null || endDate == null) {
+            throw new IllegalArgumentException("initDate and endDate are required.");
+        }
+        if (endDate.isBefore(initDate)) {
+            throw new IllegalArgumentException("endDate cannot be before initDate.");
+        }
+        if (initDate.plusDays(365).isBefore(endDate)) {
+            throw new IllegalArgumentException("Diet duration cannot exceed 365 days.");
+        }
+    }
 }

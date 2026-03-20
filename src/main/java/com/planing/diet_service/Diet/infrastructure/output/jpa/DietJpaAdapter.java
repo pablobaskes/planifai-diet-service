@@ -10,10 +10,14 @@ import com.planing.diet_service.Diet.infrastructure.output.jpa.repository.DietJp
 import com.planing.diet_service.Diet.domain.model.DietDay;
 import com.planing.diet_service.Diet.infrastructure.output.jpa.entity.DietDayEntity;
 import com.planing.diet_service.Diet.infrastructure.output.jpa.repository.DietDayJpaRepository;
+import com.planing.diet_service.MealSlot.domain.model.MealSlot;
+import com.planing.diet_service.MealSlot.domain.utils.MealType;
+import com.planing.diet_service.MealSlot.infrastructure.output.jpa.repository.MealSlotJpaRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,6 +63,13 @@ public class DietJpaAdapter implements DietOutputPort {
         return dietJpaRepository.existsById(id);
     }
 
+    public List<Diet> findDietsByDateRange(LocalDate from, LocalDate to) {
+        return dietJpaRepository.findDietsWithDaysBetween(from, to)
+                .stream()
+                .map(dietJpaMapper::toDomain)
+                .toList();
+    }
+
     // ── DietDay ───────────────────────────
 
     @Override
@@ -96,5 +107,7 @@ public class DietJpaAdapter implements DietOutputPort {
     public boolean dietDayExistsById(Long dayId) {
         return dietDayJpaRepository.existsById(dayId);
     }
+
+
 }
 

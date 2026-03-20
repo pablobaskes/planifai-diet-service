@@ -2,20 +2,19 @@ package com.planing.diet_service.Diet.infrastructure.input.rest;
 
 
 import com.planing.diet.api.DietsApi;
-import com.planing.diet.dto.DietDayRequest;
-import com.planing.diet.dto.DietDayResponse;
-import com.planing.diet.dto.DietRequest;
-import com.planing.diet.dto.DietResponse;
+import com.planing.diet.dto.*;
 import com.planing.diet_service.Diet.application.ports.input.DietInputPort;
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Diet.infrastructure.input.rest.mapper.DietRestMapper;
 import com.planing.diet_service.Diet.domain.model.DietDay;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -70,6 +69,15 @@ public class DietRestAdapter implements DietsApi {
     public ResponseEntity<DietDayResponse> getDietDayById(Long dietId, Long dayId) {
         DietDay dietDay = dietInputPort.getDietDayById(dietId, dayId);
         return ResponseEntity.ok(dietRestMapper.toResponse(dietDay));
+    }
+
+    @Override
+    public ResponseEntity<List<DietDetailResponse>> getDietsByDateRange(
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+
+        List<Diet> diets = dietInputPort.getDietsByDateRange(from, to);
+        return ResponseEntity.ok(dietRestMapper.toDetailResponseList(diets));
     }
 
     @Override
