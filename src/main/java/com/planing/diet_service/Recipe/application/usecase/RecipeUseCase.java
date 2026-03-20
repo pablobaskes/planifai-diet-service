@@ -1,4 +1,4 @@
-package main.java.com.planing.diet_service.Recipe.application.usecase;
+package com.planing.diet_service.Recipe.application.usecase;
 
 import com.planing.diet_service.Food.application.ports.input.FoodInputPort;
 import com.planing.diet_service.Food.domain.exception.FoodNotFoundException;

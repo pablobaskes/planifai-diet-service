@@ -15,9 +15,7 @@
 	<description>Demo project for Spring Boot</description>
 
 	<properties>
-		<java.version>25</java.version>
-		<maven.compiler.source>25</maven.compiler.source>
-		<maven.compiler.target>25</maven.compiler.target>
+		<java.version>17</java.version>
 		<openapi.api.package>com.planing.diet.api</openapi.api.package>
 		<openapi.model.package>com.planing.diet.dto</openapi.model.package>
 	</properties>
@@ -92,8 +90,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>25</source>
-					<target>25</target>
+					<source>17</source>
+					<target>17</target>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
