@@ -18,80 +18,69 @@ import static com.planing.diet_service.MealSlot.domain.utils.DietConstants.TOLER
 @Slf4j
 public class MealSlot {
 
-
     private Long id;
     private MealType type;
     private Recipe recipe;
     private DietDay dietDay;
 
     // ─────────────────────────────────────────────────────────
-    // Selecciona el MealSlot más adecuado de una lista de candidatos
-    // según el objetivo calórico de la franja.
-    // Devuelve una copia nueva con el dietDay asignado.
+    // Selecciona la Recipe más adecuada según el objetivo calórico
+    // y construye un MealSlot nuevo (sin id) listo para persistir.
     // ─────────────────────────────────────────────────────────
-    public static MealSlot selectBest(List<MealSlot> candidates, double calorieTarget, DietDay dietDay) {
+    public static MealSlot selectBest(List<Recipe> candidates, MealType type,
+                                      double calorieTarget, DietDay dietDay) {
         if (candidates == null || candidates.isEmpty()) {
-            log.warn("No MealSlot candidates found for type: {}", dietDay);
+            log.warn("No Recipe candidates found for type: {}", type);
             return null;
         }
 
-        List<MealSlot> withNutrition = candidates.stream()
+        List<Recipe> withNutrition = candidates.stream()
                 .filter(MealSlot::hasNutritionData)
                 .toList();
 
+        Recipe selected;
+
         if (withNutrition.isEmpty()) {
-            log.warn("No MealSlots with nutrition data. Using random fallback.");
-            MealSlot fallback = candidates.get((int) (Math.random() * candidates.size()));
-            return fallback.copyFor(dietDay);
+            log.warn("No recipes with nutrition data for type {}. Using random fallback.", type);
+            selected = candidates.get((int) (Math.random() * candidates.size()));
+        } else {
+            double lowerBound = calorieTarget * (1 - TOLERANCE_PCT);
+            double upperBound = calorieTarget * (1 + TOLERANCE_PCT);
+
+            List<Recipe> inRange = withNutrition.stream()
+                    .filter(r -> {
+                        double cal = r.getNutritionSummary().getTotalCalories();
+                        return cal >= lowerBound && cal <= upperBound;
+                    })
+                    .toList();
+
+            List<Recipe> pool = inRange.isEmpty() ? withNutrition : inRange;
+
+            if (inRange.isEmpty()) {
+                log.debug("No recipe in range [{}-{}] for type {}. Using closest fallback.",
+                        lowerBound, upperBound, type);
+            }
+
+            selected = pool.stream()
+                    .min((a, b) -> Double.compare(
+                            Math.abs(a.getNutritionSummary().getTotalCalories() - calorieTarget),
+                            Math.abs(b.getNutritionSummary().getTotalCalories() - calorieTarget)))
+                    .orElse(pool.get(0));
+
+            log.debug("Selected recipe='{}' cal={} target={}",
+                    selected.getName(),
+                    selected.getNutritionSummary().getTotalCalories(),
+                    calorieTarget);
         }
 
-        double lowerBound = calorieTarget * (1 - TOLERANCE_PCT);
-        double upperBound = calorieTarget * (1 + TOLERANCE_PCT);
-
-        List<MealSlot> inRange = withNutrition.stream()
-                .filter(ms -> {
-                    double cal = ms.getRecipe().getNutritionSummary().getTotalCalories();
-                    return cal >= lowerBound && cal <= upperBound;
-                })
-                .toList();
-
-        List<MealSlot> pool = inRange.isEmpty() ? withNutrition : inRange;
-
-        if (inRange.isEmpty()) {
-            log.debug("No MealSlot in calorie range [{}-{}]. Using closest fallback.", lowerBound, upperBound);
-        }
-
-        MealSlot selected = pool.stream()
-                .min((a, b) -> Double.compare(
-                        Math.abs(a.getRecipe().getNutritionSummary().getTotalCalories() - calorieTarget),
-                        Math.abs(b.getRecipe().getNutritionSummary().getTotalCalories() - calorieTarget)))
-                .orElse(pool.get(0));
-
-        log.debug("Selected MealSlot type={} recipe='{}' cal={} target={}",
-                selected.getType(),
-                selected.getRecipe().getName(),
-                selected.getRecipe().getNutritionSummary().getTotalCalories(),
-                calorieTarget);
-
-        return selected.copyFor(dietDay);
+        MealSlot mealSlot = new MealSlot();
+        mealSlot.setType(type);
+        mealSlot.setRecipe(selected);
+        mealSlot.setDietDay(dietDay);
+        return mealSlot;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // Crea una copia de este MealSlot asignándole un DietDay.
-    // El original (catálogo) no se modifica.
-    // ─────────────────────────────────────────────────────────
-    public MealSlot copyFor(DietDay dietDay) {
-        MealSlot copy = new MealSlot();
-        copy.setType(this.type);
-        copy.setRecipe(this.recipe);
-        copy.setDietDay(dietDay);
-        return copy;
-    }
-
-    // ─────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────
-    public boolean hasNutritionData() {
+    private static boolean hasNutritionData(Recipe recipe) {
         return recipe != null
                 && recipe.getNutritionSummary() != null
                 && recipe.getNutritionSummary().getTotalCalories() != null;

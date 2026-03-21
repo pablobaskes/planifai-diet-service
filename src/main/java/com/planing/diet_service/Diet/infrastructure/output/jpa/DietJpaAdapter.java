@@ -63,10 +63,17 @@ public class DietJpaAdapter implements DietOutputPort {
         return dietJpaRepository.existsById(id);
     }
 
+    @Override
     public List<Diet> findDietsByDateRange(LocalDate from, LocalDate to) {
-        return dietJpaRepository.findDietsWithDaysBetween(from, to)
-                .stream()
-                .map(dietJpaMapper::toDomain)
+        List<DietEntity> dietEntities = dietJpaRepository.findDietsBetween(from, to);
+
+        return dietEntities.stream()
+                .map(dietEntity -> {
+                    List<DietDayEntity> daysWithSlots = dietDayJpaRepository
+                            .findByDietIdWithMealSlotsAndRecipe(dietEntity.getId());
+                    dietEntity.setDays(daysWithSlots);
+                    return dietJpaMapper.toDomain(dietEntity);
+                })
                 .toList();
     }
 

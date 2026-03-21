@@ -1,6 +1,7 @@
 package com.planing.diet_service.Recipe.infrastructure.output.jpa.entity;
 
 import com.planing.diet_service.FoodPortion.infrastructure.output.jpa.entity.FoodPortionEmbedded;
+import com.planing.diet_service.MealSlot.domain.utils.MealType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -43,4 +44,8 @@ public class RecipeEntity {
 
     @Column(name = "servings")
     private Integer servings;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "meal_type")
+    private MealType mealType;
 }

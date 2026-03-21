@@ -15,14 +15,11 @@ public interface DietJpaRepository extends JpaRepository<DietEntity, Long> {
 
     @Query("""
             SELECT DISTINCT d FROM DietEntity d
-            LEFT JOIN FETCH d.days dd
-            LEFT JOIN FETCH dd.mealSlots ms
-            LEFT JOIN FETCH ms.recipe
             WHERE d.initDate <= :to
               AND d.endDate >= :from
             ORDER BY d.initDate ASC
             """)
-    List<DietEntity> findDietsWithDaysBetween(
+    List<DietEntity> findDietsBetween(
             @Param("from") LocalDate from,
             @Param("to") LocalDate to
     );

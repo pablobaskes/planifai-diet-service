@@ -145,8 +145,7 @@ public class DietUseCase implements DietInputPort {
         LocalDate current = diet.getInitDate();
 
         while (!current.isAfter(diet.getEndDate())) {
-            DietDay savedDay = dietOutputPort.saveDietDay(buildDietDay(current, diet));
-            days.add(savedDay);
+            days.add(buildAndPersistDietDay(current, diet));
             current = current.plusDays(1);
         }
 
@@ -154,33 +153,37 @@ public class DietUseCase implements DietInputPort {
         return days;
     }
 
-    private DietDay buildDietDay(LocalDate date, Diet diet) {
+    private DietDay buildAndPersistDietDay(LocalDate date, Diet diet) {
+        // 1. Persistir DietDay vacío → obtener ID de BD
         DietDay dietDay = new DietDay();
         dietDay.setDate(date);
         dietDay.setDiet(diet);
         dietDay.setMealSlots(new ArrayList<>());
+        DietDay savedDietDay = dietOutputPort.saveDietDay(dietDay);
 
-        int caloriesTarget = diet.getCaloriesTarget() != null ? diet.getCaloriesTarget() : DEFAULT_CALORIES_TARGET;
+        // 2. Seleccionar receta por tipo y objetivo calórico → persistir MealSlot
+        int caloriesTarget = diet.getCaloriesTarget() != null
+                ? diet.getCaloriesTarget()
+                : DEFAULT_CALORIES_TARGET;
 
-        // La lógica de selección vive en el dominio MealSlot
-        addIfPresent(dietDay, MealSlot.selectBest(
-                mealSlotJpaOutputPort.findMealSlotsByType(MealType.BREAKFAST),
-                caloriesTarget * BREAKFAST_PCT, dietDay));
+        List<MealSlot> savedSlots = new ArrayList<>();
 
-        addIfPresent(dietDay, MealSlot.selectBest(
-                mealSlotJpaOutputPort.findMealSlotsByType(MealType.LUNCH),
-                caloriesTarget * LUNCH_PCT, dietDay));
+        MealSlot breakfast = MealSlot.selectBest(
+                mealSlotJpaOutputPort.findRecipesByMealType(MealType.BREAKFAST),
+                MealType.BREAKFAST, caloriesTarget * BREAKFAST_PCT, savedDietDay);
+        if (breakfast != null) savedSlots.add(mealSlotJpaOutputPort.saveMealSlot(breakfast));
 
-        addIfPresent(dietDay, MealSlot.selectBest(
-                mealSlotJpaOutputPort.findMealSlotsByType(MealType.DINNER),
-                caloriesTarget * DINNER_PCT, dietDay));
+        MealSlot lunch = MealSlot.selectBest(
+                mealSlotJpaOutputPort.findRecipesByMealType(MealType.LUNCH),
+                MealType.LUNCH, caloriesTarget * LUNCH_PCT, savedDietDay);
+        if (lunch != null) savedSlots.add(mealSlotJpaOutputPort.saveMealSlot(lunch));
 
-        return dietDay;
-    }
+        MealSlot dinner = MealSlot.selectBest(
+                mealSlotJpaOutputPort.findRecipesByMealType(MealType.DINNER),
+                MealType.DINNER, caloriesTarget * DINNER_PCT, savedDietDay);
+        if (dinner != null) savedSlots.add(mealSlotJpaOutputPort.saveMealSlot(dinner));
 
-    private void addIfPresent(DietDay dietDay, MealSlot mealSlot) {
-        if (mealSlot != null) {
-            dietDay.getMealSlots().add(mealSlot);
-        }
+        savedDietDay.setMealSlots(savedSlots);
+        return savedDietDay;
     }
 }
