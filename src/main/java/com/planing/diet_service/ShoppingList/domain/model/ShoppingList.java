@@ -8,7 +8,7 @@ import java.util.List;
 
 public class ShoppingList {
     private Long id;
-    private Long userId;
     private LocalDate weekStart;
-    private List<FoodPortion> items = new ArrayList<>();
+    private ShoppingListStatus status;
+    private List<ShoppingListItem> items;
 }
