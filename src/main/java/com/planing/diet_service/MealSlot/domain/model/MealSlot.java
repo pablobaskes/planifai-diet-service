@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.Set;
 
 import static com.planing.diet_service.MealSlot.domain.utils.DietConstants.TOLERANCE_PCT;
 
@@ -24,17 +25,32 @@ public class MealSlot {
     private DietDay dietDay;
 
     // ─────────────────────────────────────────────────────────
-    // Selecciona la Recipe más adecuada según el objetivo calórico
-    // y construye un MealSlot nuevo (sin id) listo para persistir.
+    // Selecciona la Recipe más adecuada según el objetivo calórico,
+    // excluyendo las recetas ya usadas en la semana para ese MealType.
+    // Si tras excluir no quedan candidatos, permite repetición (fallback).
     // ─────────────────────────────────────────────────────────
-    public static MealSlot selectBest(List<Recipe> candidates, MealType type,
-                                      double calorieTarget, DietDay dietDay) {
+    public static MealSlot selectBest(List<Recipe> candidates,
+                                      MealType type,
+                                      double calorieTarget,
+                                      DietDay dietDay,
+                                      Set<Long> excludedIds) {
         if (candidates == null || candidates.isEmpty()) {
             log.warn("No Recipe candidates found for type: {}", type);
             return null;
         }
 
-        List<Recipe> withNutrition = candidates.stream()
+        // Excluir recetas ya usadas esta semana para este MealType
+        List<Recipe> available = candidates.stream()
+                .filter(r -> !excludedIds.contains(r.getId()))
+                .toList();
+
+        // Si no quedan disponibles, permitir repetición
+        if (available.isEmpty()) {
+            log.warn("All recipes already used for type {}. Allowing repetition as fallback.", type);
+            available = candidates;
+        }
+
+        List<Recipe> withNutrition = available.stream()
                 .filter(MealSlot::hasNutritionData)
                 .toList();
 
@@ -42,7 +58,7 @@ public class MealSlot {
 
         if (withNutrition.isEmpty()) {
             log.warn("No recipes with nutrition data for type {}. Using random fallback.", type);
-            selected = candidates.get((int) (Math.random() * candidates.size()));
+            selected = available.get((int) (Math.random() * available.size()));
         } else {
             double lowerBound = calorieTarget * (1 - TOLERANCE_PCT);
             double upperBound = calorieTarget * (1 + TOLERANCE_PCT);
@@ -67,10 +83,11 @@ public class MealSlot {
                             Math.abs(b.getNutritionSummary().getTotalCalories() - calorieTarget)))
                     .orElse(pool.get(0));
 
-            log.debug("Selected recipe='{}' cal={} target={}",
+            log.debug("Selected recipe='{}' cal={} target={} excludedCount={}",
                     selected.getName(),
                     selected.getNutritionSummary().getTotalCalories(),
-                    calorieTarget);
+                    calorieTarget,
+                    excludedIds.size());
         }
 
         MealSlot mealSlot = new MealSlot();
@@ -80,10 +97,18 @@ public class MealSlot {
         return mealSlot;
     }
 
+    // ─────────────────────────────────────────────────────────
+    // Devuelve las calorías reales de la receta asignada.
+    // Usado por el useCase para el balance calórico diario.
+    // ─────────────────────────────────────────────────────────
+    public double getCalories() {
+        if (!hasNutritionData(recipe)) return 0.0;
+        return recipe.getNutritionSummary().getTotalCalories();
+    }
+
     private static boolean hasNutritionData(Recipe recipe) {
         return recipe != null
                 && recipe.getNutritionSummary() != null
                 && recipe.getNutritionSummary().getTotalCalories() != null;
     }
 }
-

@@ -7,14 +7,13 @@ import com.planing.diet_service.Diet.domain.model.DietDay;
 import com.planing.diet_service.MealSlot.application.ports.output.MealSlotJpaOutputPort;
 import com.planing.diet_service.MealSlot.domain.model.MealSlot;
 import com.planing.diet_service.MealSlot.domain.utils.MealType;
+import com.planing.diet_service.Recipe.domain.model.Recipe;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import static com.planing.diet_service.MealSlot.domain.utils.DietConstants.*;
 
@@ -25,7 +24,6 @@ public class DietUseCase implements DietInputPort {
 
     private final DietOutputPort dietOutputPort;
     private final MealSlotJpaOutputPort mealSlotJpaOutputPort;
-
 
     // ── Diet ──────────────────────────────
 
@@ -144,8 +142,23 @@ public class DietUseCase implements DietInputPort {
         List<DietDay> days = new ArrayList<>();
         LocalDate current = diet.getInitDate();
 
+        // Sets de recetas ya usadas por MealType — se mantienen durante
+        // toda la generación de la dieta para evitar repeticiones
+        Map<MealType, Set<Long>> usedRecipeIds = new EnumMap<>(MealType.class);
+        usedRecipeIds.put(MealType.BREAKFAST, new HashSet<>());
+        usedRecipeIds.put(MealType.LUNCH,     new HashSet<>());
+        usedRecipeIds.put(MealType.DINNER,    new HashSet<>());
+
+        // Obtener candidatos una sola vez — evita N llamadas a BD por día
+        List<Recipe> breakfastCandidates = mealSlotJpaOutputPort.findRecipesByMealType(MealType.BREAKFAST);
+        List<Recipe> lunchCandidates     = mealSlotJpaOutputPort.findRecipesByMealType(MealType.LUNCH);
+        List<Recipe> dinnerCandidates    = mealSlotJpaOutputPort.findRecipesByMealType(MealType.DINNER);
+
         while (!current.isAfter(diet.getEndDate())) {
-            days.add(buildAndPersistDietDay(current, diet));
+            days.add(buildAndPersistDietDay(
+                    current, diet,
+                    breakfastCandidates, lunchCandidates, dinnerCandidates,
+                    usedRecipeIds));
             current = current.plusDays(1);
         }
 
@@ -153,7 +166,14 @@ public class DietUseCase implements DietInputPort {
         return days;
     }
 
-    private DietDay buildAndPersistDietDay(LocalDate date, Diet diet) {
+    private DietDay buildAndPersistDietDay(
+            LocalDate date,
+            Diet diet,
+            List<Recipe> breakfastCandidates,
+            List<Recipe> lunchCandidates,
+            List<Recipe> dinnerCandidates,
+            Map<MealType, Set<Long>> usedRecipeIds) {
+
         // 1. Persistir DietDay vacío → obtener ID de BD
         DietDay dietDay = new DietDay();
         dietDay.setDate(date);
@@ -161,27 +181,64 @@ public class DietUseCase implements DietInputPort {
         dietDay.setMealSlots(new ArrayList<>());
         DietDay savedDietDay = dietOutputPort.saveDietDay(dietDay);
 
-        // 2. Seleccionar receta por tipo y objetivo calórico → persistir MealSlot
-        int caloriesTarget = diet.getCaloriesTarget() != null
+        int dailyTarget = diet.getCaloriesTarget() != null
                 ? diet.getCaloriesTarget()
                 : DEFAULT_CALORIES_TARGET;
 
         List<MealSlot> savedSlots = new ArrayList<>();
 
+        // 2. BREAKFAST — objetivo fijo (25% del diario)
+        double breakfastTarget = dailyTarget * BREAKFAST_PCT;
         MealSlot breakfast = MealSlot.selectBest(
-                mealSlotJpaOutputPort.findRecipesByMealType(MealType.BREAKFAST),
-                MealType.BREAKFAST, caloriesTarget * BREAKFAST_PCT, savedDietDay);
-        if (breakfast != null) savedSlots.add(mealSlotJpaOutputPort.saveMealSlot(breakfast));
+                breakfastCandidates, MealType.BREAKFAST,
+                breakfastTarget, savedDietDay,
+                usedRecipeIds.get(MealType.BREAKFAST));
+
+        double breakfastCalories = 0;
+        if (breakfast != null) {
+            MealSlot saved = mealSlotJpaOutputPort.saveMealSlot(breakfast);
+            savedSlots.add(saved);
+            breakfastCalories = saved.getCalories();
+            usedRecipeIds.get(MealType.BREAKFAST).add(saved.getRecipe().getId());
+        }
+
+        // 3. LUNCH — objetivo ajustado dinámicamente
+        // Reservamos el 35% para cena, el resto va para comida
+        double remainingAfterBreakfast = dailyTarget - breakfastCalories;
+        double dinnerReserve = dailyTarget * DINNER_PCT;
+        double lunchTarget = Math.max(remainingAfterBreakfast - dinnerReserve, 0);
 
         MealSlot lunch = MealSlot.selectBest(
-                mealSlotJpaOutputPort.findRecipesByMealType(MealType.LUNCH),
-                MealType.LUNCH, caloriesTarget * LUNCH_PCT, savedDietDay);
-        if (lunch != null) savedSlots.add(mealSlotJpaOutputPort.saveMealSlot(lunch));
+                lunchCandidates, MealType.LUNCH,
+                lunchTarget, savedDietDay,
+                usedRecipeIds.get(MealType.LUNCH));
+
+        double lunchCalories = 0;
+        if (lunch != null) {
+            MealSlot saved = mealSlotJpaOutputPort.saveMealSlot(lunch);
+            savedSlots.add(saved);
+            lunchCalories = saved.getCalories();
+            usedRecipeIds.get(MealType.LUNCH).add(saved.getRecipe().getId());
+        }
+
+        // 4. DINNER — objetivo = lo que queda del día
+        double dinnerTarget = Math.max(dailyTarget - breakfastCalories - lunchCalories, 0);
 
         MealSlot dinner = MealSlot.selectBest(
-                mealSlotJpaOutputPort.findRecipesByMealType(MealType.DINNER),
-                MealType.DINNER, caloriesTarget * DINNER_PCT, savedDietDay);
-        if (dinner != null) savedSlots.add(mealSlotJpaOutputPort.saveMealSlot(dinner));
+                dinnerCandidates, MealType.DINNER,
+                dinnerTarget, savedDietDay,
+                usedRecipeIds.get(MealType.DINNER));
+
+        if (dinner != null) {
+            MealSlot saved = mealSlotJpaOutputPort.saveMealSlot(dinner);
+            savedSlots.add(saved);
+            usedRecipeIds.get(MealType.DINNER).add(saved.getRecipe().getId());
+
+            log.debug("Day {} | target={}kcal | breakfast={}kcal lunch={}kcal dinner={}kcal | total={}kcal",
+                    date, dailyTarget,
+                    breakfastCalories, lunchCalories, saved.getCalories(),
+                    breakfastCalories + lunchCalories + saved.getCalories());
+        }
 
         savedDietDay.setMealSlots(savedSlots);
         return savedDietDay;
