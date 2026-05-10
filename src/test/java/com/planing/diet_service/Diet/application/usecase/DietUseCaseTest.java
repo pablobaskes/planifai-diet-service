@@ -1,6 +1,8 @@
 package com.planing.diet_service.Diet.application.usecase;
 
 import com.planing.diet_service.Diet.application.ports.output.DietOutputPort;
+import com.planing.diet_service.Diet.domain.model.Diet;
+import com.planing.diet_service.Diet.domain.model.DietDay;
 import com.planing.diet_service.MealSlot.application.ports.output.MealSlotJpaOutputPort;
 import com.planing.diet_service.MealSlot.domain.model.MealSlot;
 import com.planing.diet_service.MealSlot.domain.utils.MealType;
@@ -12,6 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -110,12 +114,74 @@ class DietUseCaseTest {
         assertThat(result.getRecipe()).isEqualTo(untypedRecipe);
     }
 
+    @Test
+    void overrideMealSlotRecipeThrowsWhenSlotIdIsInvalid() {
+        assertThatThrownBy(() -> dietUseCase.overrideMealSlotRecipe(0L, 2L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Meal slot id must be positive");
+
+        verify(mealSlotJpaOutputPort, never()).findMealSlotById(any());
+        verify(recipeOutputPort, never()).findById(any());
+        verify(mealSlotJpaOutputPort, never()).saveMealSlot(any());
+    }
+
+    @Test
+    void overrideMealSlotRecipeThrowsWhenRecipeIdIsInvalid() {
+        assertThatThrownBy(() -> dietUseCase.overrideMealSlotRecipe(10L, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Recipe id must be positive");
+
+        verify(mealSlotJpaOutputPort, never()).findMealSlotById(any());
+        verify(recipeOutputPort, never()).findById(any());
+        verify(mealSlotJpaOutputPort, never()).saveMealSlot(any());
+    }
+
+    @Test
+    void dietsByDateRangeReflectsOverriddenRecipeWhenUsingPersistedSlotReference() {
+        LocalDate date = LocalDate.of(2026, 5, 10);
+        Recipe originalRecipe = recipe(1L, MealType.LUNCH);
+        Recipe newRecipe = recipe(2L, MealType.LUNCH);
+        MealSlot slot = mealSlot(10L, MealType.LUNCH, originalRecipe);
+        Diet diet = dietWithSlot(date, slot);
+
+        when(mealSlotJpaOutputPort.findMealSlotById(10L)).thenReturn(Optional.of(slot));
+        when(recipeOutputPort.findById(2L)).thenReturn(Optional.of(newRecipe));
+        when(mealSlotJpaOutputPort.saveMealSlot(any(MealSlot.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(dietOutputPort.findDietsByDateRange(date, date)).thenReturn(List.of(diet));
+
+        dietUseCase.overrideMealSlotRecipe(10L, 2L);
+        List<Diet> result = dietUseCase.getDietsByDateRange(date, date);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getDays().get(0).getMealSlots().get(0).getRecipe())
+                .isEqualTo(newRecipe);
+    }
+
     private MealSlot mealSlot(Long id, MealType type, Recipe recipe) {
         MealSlot mealSlot = new MealSlot();
         mealSlot.setId(id);
         mealSlot.setType(type);
         mealSlot.setRecipe(recipe);
         return mealSlot;
+    }
+
+    private Diet dietWithSlot(LocalDate date, MealSlot slot) {
+        Diet diet = new Diet();
+        diet.setId(1L);
+        diet.setName("Wave 1 Diet");
+        diet.setInitDate(date);
+        diet.setEndDate(date);
+
+        DietDay day = new DietDay();
+        day.setId(100L);
+        day.setDate(date);
+        day.setDiet(diet);
+        day.setMealSlots(List.of(slot));
+
+        slot.setDietDay(day);
+        diet.setDays(List.of(day));
+        return diet;
     }
 
     private Recipe recipe(Long id, MealType mealType) {
