@@ -16,6 +16,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @AllArgsConstructor
@@ -58,5 +59,11 @@ public class MealSlotJpaAdapter implements MealSlotJpaOutputPort {
         }
 
         return mealSlotJpaMapper.toDomain(mealSlotJpaRepository.save(entity));
+    }
+
+    @Override
+    public Optional<MealSlot> findMealSlotById(Long id) {
+        return mealSlotJpaRepository.findById(id)
+                .map(mealSlotJpaMapper::toDomain);
     }
 }

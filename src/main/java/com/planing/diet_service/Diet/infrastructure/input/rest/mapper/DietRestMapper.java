@@ -6,8 +6,10 @@ import com.planing.diet.dto.DietDayResponse;
 import com.planing.diet.dto.DietDetailResponse;
 import com.planing.diet.dto.DietRequest;
 import com.planing.diet.dto.DietResponse;
+import com.planing.diet.dto.MealSlotDetailResponse;
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Diet.domain.model.DietDay;
+import com.planing.diet_service.MealSlot.domain.model.MealSlot;
 import com.planing.diet_service.MealSlot.infrastructure.input.rest.mapper.MealSlotRestMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -48,4 +50,6 @@ public interface DietRestMapper {
     // ── DietDay → DietDayDetailResponse ──────────────────────
     // mealSlots → delegado a MealSlotRestMapper vía uses
     DietDayDetailResponse toDetailResponse(DietDay dietDay);
+
+    MealSlotDetailResponse toDetailResponse(MealSlot mealSlot);
 }

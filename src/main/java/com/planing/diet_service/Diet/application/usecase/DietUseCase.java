@@ -7,6 +7,7 @@ import com.planing.diet_service.Diet.domain.model.DietDay;
 import com.planing.diet_service.MealSlot.application.ports.output.MealSlotJpaOutputPort;
 import com.planing.diet_service.MealSlot.domain.model.MealSlot;
 import com.planing.diet_service.MealSlot.domain.utils.MealType;
+import com.planing.diet_service.Recipe.application.ports.output.RecipeOutputPort;
 import com.planing.diet_service.Recipe.domain.model.Recipe;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class DietUseCase implements DietInputPort {
 
     private final DietOutputPort dietOutputPort;
     private final MealSlotJpaOutputPort mealSlotJpaOutputPort;
+    private final RecipeOutputPort recipeOutputPort;
 
     // ── Diet ──────────────────────────────
 
@@ -132,6 +134,37 @@ public class DietUseCase implements DietInputPort {
             throw new NoSuchElementException("DietDay not found with id: " + dayId);
         }
         dietOutputPort.deleteDietDayById(dayId);
+    }
+
+    @Override
+    public MealSlot overrideMealSlotRecipe(Long slotId, Long recipeId) {
+        log.info("Overriding meal slot {} with recipe {}", slotId, recipeId);
+        if (slotId == null || slotId <= 0) {
+            throw new IllegalArgumentException("Meal slot id must be positive.");
+        }
+        if (recipeId == null || recipeId <= 0) {
+            throw new IllegalArgumentException("Recipe id must be positive.");
+        }
+
+        MealSlot mealSlot = mealSlotJpaOutputPort.findMealSlotById(slotId)
+                .orElseThrow(() -> new NoSuchElementException("MealSlot not found with id: " + slotId));
+        Recipe recipe = recipeOutputPort.findById(recipeId)
+                .orElseThrow(() -> new NoSuchElementException("Recipe not found with id: " + recipeId));
+
+        validateMealTypeCompatibility(mealSlot, recipe);
+
+        mealSlot.setRecipe(recipe);
+        return mealSlotJpaOutputPort.saveMealSlot(mealSlot);
+    }
+
+    private void validateMealTypeCompatibility(MealSlot mealSlot, Recipe recipe) {
+        if (mealSlot.getType() != null
+                && recipe.getMealType() != null
+                && mealSlot.getType() != recipe.getMealType()) {
+            throw new IllegalArgumentException(
+                    "Recipe mealType " + recipe.getMealType()
+                            + " is not compatible with meal slot type " + mealSlot.getType() + ".");
+        }
     }
 
     // ─────────────────────────────────────────────────────────

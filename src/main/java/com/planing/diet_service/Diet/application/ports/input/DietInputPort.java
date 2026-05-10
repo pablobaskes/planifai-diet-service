@@ -2,6 +2,7 @@ package com.planing.diet_service.Diet.application.ports.input;
 
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Diet.domain.model.DietDay;
+import com.planing.diet_service.MealSlot.domain.model.MealSlot;
 
 
 import java.time.LocalDate;
@@ -23,4 +24,5 @@ public interface DietInputPort {
     DietDay createDietDay(Long dietId, DietDay dietDay);
     DietDay updateDietDay(Long dietId, Long dayId, DietDay dietDay);
     void deleteDietDay(Long dietId, Long dayId);
+    MealSlot overrideMealSlotRecipe(Long slotId, Long recipeId);
 }

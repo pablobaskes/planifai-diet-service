@@ -239,6 +239,38 @@ paths:
   # ─────────────────────────────────────────
   # RECIPES
   # ─────────────────────────────────────────
+  /api/v1/meal-slots/{slotId}/recipe:
+    parameters:
+      - name: slotId
+        in: path
+        required: true
+        description: ID del meal slot a editar
+        schema:
+          type: integer
+          format: int64
+
+    patch:
+      tags: [ Diets ]
+      operationId: overrideMealSlotRecipe
+      summary: Cambiar la recipe asignada a un meal slot existente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MealSlotRecipeOverrideRequest'
+      responses:
+        '200':
+          description: Meal slot actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealSlotDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/v1/recipes:
     get:
       tags: [ Recipes ]
@@ -765,6 +797,16 @@ components:
           type: integer
           format: int64
           example: 10
+
+    MealSlotRecipeOverrideRequest:
+      type: object
+      required:
+        - recipeId
+      properties:
+        recipeId:
+          type: integer
+          format: int64
+          example: 42
 
     NutritionSummaryDto:
       type: object

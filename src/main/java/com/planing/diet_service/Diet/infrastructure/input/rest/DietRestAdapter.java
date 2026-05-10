@@ -7,6 +7,7 @@ import com.planing.diet_service.Diet.application.ports.input.DietInputPort;
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Diet.infrastructure.input.rest.mapper.DietRestMapper;
 import com.planing.diet_service.Diet.domain.model.DietDay;
+import com.planing.diet_service.MealSlot.domain.model.MealSlot;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -96,6 +97,20 @@ public class DietRestAdapter implements DietsApi {
     public ResponseEntity<Void> deleteDietDay(Long dietId, Long dayId) {
         dietInputPort.deleteDietDay(dietId, dayId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<MealSlotDetailResponse> overrideMealSlotRecipe(
+            Long slotId,
+            MealSlotRecipeOverrideRequest mealSlotRecipeOverrideRequest) {
+
+        if (mealSlotRecipeOverrideRequest == null) {
+            throw new IllegalArgumentException("Meal slot recipe override request is required.");
+        }
+        MealSlot mealSlot = dietInputPort.overrideMealSlotRecipe(
+                slotId,
+                mealSlotRecipeOverrideRequest.getRecipeId());
+        return ResponseEntity.ok(dietRestMapper.toDetailResponse(mealSlot));
     }
 }
 
