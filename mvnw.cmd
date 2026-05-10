@@ -85,14 +85,43 @@ if ($env:MAVEN_USER_HOME) {
 }
 
 if (-not (Test-Path -Path $MAVEN_M2_PATH)) {
-    New-Item -Path $MAVEN_M2_PATH -ItemType Directory | Out-Null
+  try {
+    New-Item -Path $MAVEN_M2_PATH -ItemType Directory -Force | Out-Null
+  } catch {
+    # Fallback for restricted/sandboxed environments without permission on HOME.
+    $MAVEN_M2_PATH = Join-Path $scriptDir ".m2"
+    if (-not (Test-Path -Path $MAVEN_M2_PATH)) {
+      New-Item -Path $MAVEN_M2_PATH -ItemType Directory -Force | Out-Null
+    }
+  }
+}
+
+$canWriteM2 = $true
+try {
+  $probeFile = Join-Path $MAVEN_M2_PATH ".mvnw-write-test"
+  Set-Content -Path $probeFile -Value "ok" -Encoding Ascii
+  Remove-Item -Path $probeFile -Force
+} catch {
+  $canWriteM2 = $false
+}
+
+if (-not $canWriteM2) {
+  $MAVEN_M2_PATH = Join-Path $scriptDir ".m2"
+  if (-not (Test-Path -Path $MAVEN_M2_PATH)) {
+    New-Item -Path $MAVEN_M2_PATH -ItemType Directory -Force | Out-Null
+  }
 }
 
 $MAVEN_WRAPPER_DISTS = $null
-if ((Get-Item $MAVEN_M2_PATH).Target[0] -eq $null) {
+$m2Item = Get-Item $MAVEN_M2_PATH
+$m2Target = $null
+if ($null -ne $m2Item.Target -and $m2Item.Target.Count -gt 0) {
+  $m2Target = $m2Item.Target[0]
+}
+if ($null -eq $m2Target) {
   $MAVEN_WRAPPER_DISTS = "$MAVEN_M2_PATH/wrapper/dists"
 } else {
-  $MAVEN_WRAPPER_DISTS = (Get-Item $MAVEN_M2_PATH).Target[0] + "/wrapper/dists"
+  $MAVEN_WRAPPER_DISTS = $m2Target + "/wrapper/dists"
 }
 
 $MAVEN_HOME_PARENT = "$MAVEN_WRAPPER_DISTS/$distributionUrlNameMain"
