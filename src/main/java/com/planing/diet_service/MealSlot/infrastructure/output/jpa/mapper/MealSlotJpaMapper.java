@@ -11,7 +11,6 @@ public interface MealSlotJpaMapper {
 
     @Mapping(target = "dietDay.mealSlots", ignore = true)
     @Mapping(target = "dietDay.diet", ignore = true)
-
     MealSlot toDomain(MealSlotEntity entity);
 
 

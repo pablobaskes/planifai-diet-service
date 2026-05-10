@@ -1,6 +1,6 @@
 package com.planing.diet_service.ShoppingList.infrastructure.output.jpa.entity;
 
-import com.planing.diet_service.FoodPortion.infrastructure.output.jpa.entity.FoodPortionEmbedded;
+import com.planing.diet_service.ShoppingList.domain.model.ShoppingListStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,14 +21,15 @@ public class ShoppingListEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId;
-
     private LocalDate weekStart;
 
-    @ElementCollection
-    @CollectionTable(
-            name = "shopping_list_items",
-            joinColumns = @JoinColumn(name = "shopping_list_id")
+    @Enumerated(EnumType.STRING)
+    private ShoppingListStatus status;
+
+    @OneToMany(
+            mappedBy = "shoppingList",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
     )
-    private List<FoodPortionEmbedded> items = new ArrayList<>();
+    private List<ShoppingListItemEntity> items = new ArrayList<>();
 }

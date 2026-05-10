@@ -523,135 +523,78 @@ paths:
   # ─────────────────────────────────────────
   # SHOPPING LISTS
   # ─────────────────────────────────────────
-  /api/v1/shopping-lists:
-    get:
-      tags: [ ShoppingLists ]
-      operationId: getAllShoppingLists
-      summary: Listar todas las listas de la compra
-      responses:
-        '200':
-          description: Lista de listas de la compra
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ShoppingListResponse'
-
+  /api/v1/shopping-lists/generate:
     post:
       tags: [ ShoppingLists ]
-      operationId: createShoppingList
-      summary: Crear una nueva lista de la compra
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ShoppingListRequest'
+      operationId: generateWeeklyShoppingList
+      summary: Generar la lista de la compra de los próximos 7 días
       responses:
-        '201':
-          description: Lista creada
+        '200':
+          description: Lista de la compra generada o existente
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: No existe una dieta activa para el rango solicitado
+        '409':
+          description: Existen múltiples dietas activas para el rango solicitado
 
-  /api/v1/shopping-lists/{listId}:
-    parameters:
-      - $ref: '#/components/parameters/ListId'
-
+  /api/v1/shopping-lists/current:
     get:
       tags: [ ShoppingLists ]
-      operationId: getShoppingListById
-      summary: Obtener una lista de la compra por ID
+      operationId: getCurrentShoppingList
+      summary: Obtener la lista de la compra actual
       responses:
         '200':
-          description: Lista encontrada
+          description: Lista de la compra encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingListResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: No existe una lista de la compra actual
 
-    put:
-      tags: [ ShoppingLists ]
-      operationId: updateShoppingList
-      summary: Actualizar una lista de la compra
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ShoppingListRequest'
-      responses:
-        '200':
-          description: Lista actualizada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ShoppingListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    delete:
-      tags: [ ShoppingLists ]
-      operationId: deleteShoppingList
-      summary: Eliminar una lista de la compra
-      responses:
-        '204':
-          description: Lista eliminada
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/v1/shopping-lists/{listId}/items:
+  /api/v1/shopping-lists/items/{itemId}/purchase:
     parameters:
-      - $ref: '#/components/parameters/ListId'
-
-    post:
-      tags: [ ShoppingLists ]
-      operationId: addItemToShoppingList
-      summary: Añadir un item a la lista de la compra
-      requestBody:
+      - name: itemId
+        in: path
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FoodPortionDto'
-      responses:
-        '200':
-          description: Item añadido, lista actualizada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ShoppingListResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        description: Identificador del item de la lista de la compra
+        schema:
+          type: integer
+          format: int64
 
-    delete:
+    patch:
       tags: [ ShoppingLists ]
-      operationId: removeItemFromShoppingList
-      summary: Eliminar un item de la lista de la compra por foodId
-      parameters:
-        - name: foodId
-          in: query
-          required: true
-          schema:
-            type: integer
-            format: int64
+      operationId: purchaseShoppingListItem
+      summary: Marcar un item de la lista de la compra como comprado
       responses:
         '200':
-          description: Item eliminado, lista actualizada
+          description: Item marcado como comprado correctamente
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingListResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: Item de la lista de la compra no encontrado
+        '409':
+          description: El item ya estaba marcado como comprado
+
+  /api/v1/shopping-lists/purchase-all:
+    patch:
+      tags: [ ShoppingLists ]
+      operationId: purchaseAllShoppingListItems
+      summary: Marcar todos los items de la lista de la compra como comprados
+      responses:
+        '200':
+          description: Todos los items han sido marcados como comprados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingListResponse'
+        '404':
+          description: No existe una lista de la compra actual
 
 # ─────────────────────────────────────────
 # COMPONENTS
@@ -1039,48 +982,74 @@ components:
           $ref: '#/components/schemas/StorageLocation'
 
     # ── ShoppingList ──────────────────────
-    ShoppingListRequest:
-      type: object
-      required:
-        - userId
-        - weekStart
-      properties:
-        userId:
-          type: integer
-          format: int64
-          example: 1
-        weekStart:
-          type: string
-          format: date
-          example: 2025-04-07
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/FoodPortionDto'
-
     ShoppingListResponse:
       type: object
       properties:
         id:
           type: integer
           format: int64
-          example: 3
-        userId:
-          type: integer
-          format: int64
           example: 1
         weekStart:
           type: string
           format: date
-          example: 2025-04-07
+          example: '2025-03-17'
+        status:
+          $ref: '#/components/schemas/ShoppingListStatus'
         items:
           type: array
           items:
-            $ref: '#/components/schemas/FoodPortionDto'
-        totalItems:
+            $ref: '#/components/schemas/ShoppingListItemResponse'
+
+    ShoppingListItemResponse:
+      type: object
+      properties:
+        id:
           type: integer
-          description: Número total de items en la lista
+          format: int64
           example: 12
+        foodId:
+          type: integer
+          format: int64
+          example: 5
+        foodName:
+          type: string
+          example: Arroz
+        requiredQuantity:
+          type: number
+          format: double
+          example: 700.0
+        availableQuantity:
+          type: number
+          format: double
+          example: 500.0
+        missingQuantity:
+          type: number
+          format: double
+          example: 200.0
+        unit:
+          $ref: '#/components/schemas/Unit'
+        purchased:
+          type: boolean
+          example: false
+
+    ShoppingListStatus:
+      type: string
+      enum:
+        - PENDING
+        - PARTIALLY_COMPLETED
+        - COMPLETED
+    Unit:
+      type: string
+      enum:
+        - G
+        - KG
+        - ML
+        - L
+        - UNIT
+        - TBSP
+        - TSP
+        - CUP
+
 
     DietDayResponse:
       type: object
