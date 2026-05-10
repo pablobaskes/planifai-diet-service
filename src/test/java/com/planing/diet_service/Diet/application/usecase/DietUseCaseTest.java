@@ -8,6 +8,7 @@ import com.planing.diet_service.MealSlot.domain.model.MealSlot;
 import com.planing.diet_service.MealSlot.domain.utils.MealType;
 import com.planing.diet_service.Recipe.application.ports.output.RecipeOutputPort;
 import com.planing.diet_service.Recipe.domain.model.Recipe;
+import com.planing.diet_service.Recipe.infrastructure.output.jpa.entity.NutritionSummaryEmbedded;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,6 +41,80 @@ class DietUseCaseTest {
 
     @InjectMocks
     private DietUseCase dietUseCase;
+
+    @Test
+    void createDietGeneratesOneDayPerDateWithBreakfastLunchAndDinnerSlots() {
+        LocalDate initDate = LocalDate.of(2026, 5, 11);
+        Diet requested = new Diet(null, "Wave 1 Diet", "Generated", 2000, initDate, initDate.plusDays(1), List.of());
+        Diet saved = new Diet(1L, "Wave 1 Diet", "Generated", 2000, initDate, initDate.plusDays(1), List.of());
+
+        when(dietOutputPort.saveDiet(requested)).thenReturn(saved);
+        when(dietOutputPort.saveDietDay(any(DietDay.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(mealSlotJpaOutputPort.saveMealSlot(any(MealSlot.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(mealSlotJpaOutputPort.findRecipesByMealType(MealType.BREAKFAST))
+                .thenReturn(List.of(recipe(1L, MealType.BREAKFAST, 500.0)));
+        when(mealSlotJpaOutputPort.findRecipesByMealType(MealType.LUNCH))
+                .thenReturn(List.of(recipe(2L, MealType.LUNCH, 800.0)));
+        when(mealSlotJpaOutputPort.findRecipesByMealType(MealType.DINNER))
+                .thenReturn(List.of(recipe(3L, MealType.DINNER, 700.0)));
+
+        Diet result = dietUseCase.createDiet(requested);
+
+        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getDays()).hasSize(2);
+        assertThat(result.getDays()).extracting(DietDay::getDate)
+                .containsExactly(initDate, initDate.plusDays(1));
+        assertThat(result.getDays())
+                .allSatisfy(day -> {
+                    assertThat(day.getDiet()).isSameAs(saved);
+                    assertThat(day.getMealSlots()).hasSize(3);
+                    assertThat(day.getMealSlots()).extracting(MealSlot::getType)
+                            .containsExactly(MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER);
+                    assertThat(day.getMealSlots()).allSatisfy(slot -> assertThat(slot.getDietDay()).isSameAs(day));
+                });
+
+        verify(dietOutputPort).saveDiet(requested);
+        verify(dietOutputPort, org.mockito.Mockito.times(2)).saveDietDay(any(DietDay.class));
+        verify(mealSlotJpaOutputPort, org.mockito.Mockito.times(6)).saveMealSlot(any(MealSlot.class));
+    }
+
+    @Test
+    void createDietRejectsMissingDateRange() {
+        Diet requested = new Diet(null, "Invalid", null, 2000, null, LocalDate.of(2026, 5, 12), List.of());
+
+        assertThatThrownBy(() -> dietUseCase.createDiet(requested))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("initDate and endDate are required");
+
+        verify(dietOutputPort, never()).saveDiet(any());
+        verify(mealSlotJpaOutputPort, never()).saveMealSlot(any());
+    }
+
+    @Test
+    void createDietRejectsEndDateBeforeInitDate() {
+        Diet requested = new Diet(null, "Invalid", null, 2000,
+                LocalDate.of(2026, 5, 12), LocalDate.of(2026, 5, 11), List.of());
+
+        assertThatThrownBy(() -> dietUseCase.createDiet(requested))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("endDate cannot be before initDate");
+
+        verify(dietOutputPort, never()).saveDiet(any());
+        verify(mealSlotJpaOutputPort, never()).saveMealSlot(any());
+    }
+
+    @Test
+    void createDietRejectsDurationLongerThanOneYear() {
+        LocalDate initDate = LocalDate.of(2026, 5, 11);
+        Diet requested = new Diet(null, "Invalid", null, 2000, initDate, initDate.plusDays(366), List.of());
+
+        assertThatThrownBy(() -> dietUseCase.createDiet(requested))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Diet duration cannot exceed 365 days");
+
+        verify(dietOutputPort, never()).saveDiet(any());
+        verify(mealSlotJpaOutputPort, never()).saveMealSlot(any());
+    }
 
     @Test
     void overrideMealSlotRecipeUpdatesExistingSlot() {
@@ -189,6 +264,14 @@ class DietUseCaseTest {
         recipe.setId(id);
         recipe.setName("Recipe " + id);
         recipe.setMealType(mealType);
+        return recipe;
+    }
+
+    private Recipe recipe(Long id, MealType mealType, Double calories) {
+        Recipe recipe = recipe(id, mealType);
+        NutritionSummaryEmbedded nutrition = new NutritionSummaryEmbedded();
+        nutrition.setTotalCalories(calories);
+        recipe.setNutritionSummary(nutrition);
         return recipe;
     }
 }
