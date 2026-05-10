@@ -9,7 +9,13 @@ public interface InventoryItemOutputPort {
 
     List<InventoryItem> findAll();
 
+    Optional<InventoryItem> findById(Long id);
+
     Optional<InventoryItem> findByFoodId(Long foodId);
 
     InventoryItem save(InventoryItem inventoryItem);
+
+    void deleteById(Long id);
+
+    boolean existsById(Long id);
 }

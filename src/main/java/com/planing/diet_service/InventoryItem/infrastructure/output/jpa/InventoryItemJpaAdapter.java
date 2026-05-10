@@ -24,6 +24,12 @@ public class InventoryItemJpaAdapter implements InventoryItemOutputPort {
     }
 
     @Override
+    public Optional<InventoryItem> findById(Long id) {
+        return inventoryItemJpaRepository.findById(id)
+                .map(inventoryItemJpaMapper::toDomain);
+    }
+
+    @Override
     public Optional<InventoryItem> findByFoodId(Long foodId) {
         return inventoryItemJpaRepository.findByFoodId(foodId)
                 .map(inventoryItemJpaMapper::toDomain);
@@ -34,5 +40,15 @@ public class InventoryItemJpaAdapter implements InventoryItemOutputPort {
         InventoryItemEntity entity = inventoryItemJpaMapper.toEntity(inventoryItem);
         InventoryItemEntity savedEntity = inventoryItemJpaRepository.save(entity);
         return inventoryItemJpaMapper.toDomain(savedEntity);
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        inventoryItemJpaRepository.deleteById(id);
+    }
+
+    @Override
+    public boolean existsById(Long id) {
+        return inventoryItemJpaRepository.existsById(id);
     }
 }
