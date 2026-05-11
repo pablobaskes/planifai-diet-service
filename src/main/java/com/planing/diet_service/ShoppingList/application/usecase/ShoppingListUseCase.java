@@ -46,7 +46,6 @@ public class ShoppingListUseCase implements ShoppingListInputPort {
     // Si ya existe para hoy, devuelve la existente.
     // ─────────────────────────────────────────────────────────
     @Override
-    @Transactional(readOnly = true)
     public ShoppingList generateWeeklyShoppingList() {
         LocalDate today   = LocalDate.now();
         LocalDate weekEnd = today.plusDays(6);
