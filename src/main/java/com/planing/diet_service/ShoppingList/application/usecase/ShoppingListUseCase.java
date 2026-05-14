@@ -6,6 +6,7 @@ import com.planing.diet_service.Diet.domain.exception.MultipleActiveDietsFoundEx
 import com.planing.diet_service.Diet.domain.exception.NoActiveDietFoundException;
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Food.application.ports.output.FoodOutputPort;
+import com.planing.diet_service.Food.domain.model.Food;
 import com.planing.diet_service.FoodPortion.domain.model.FoodPortion;
 import com.planing.diet_service.FoodPortion.domain.model.Unit;
 import com.planing.diet_service.InventoryItem.application.ports.output.InventoryItemOutputPort;
@@ -29,6 +30,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -190,7 +193,7 @@ public class ShoppingListUseCase implements ShoppingListInputPort {
             Map<String, AggregatedIngredient> aggregated,
             List<InventoryItem> inventory) {
 
-        List<ShoppingListItem> items = new ArrayList<>();
+        List<MissingIngredient> missingIngredients = new ArrayList<>();
 
         for (AggregatedIngredient agg : aggregated.values()) {
             double available = resolveAvailableQuantity(agg, inventory);
@@ -198,16 +201,29 @@ public class ShoppingListUseCase implements ShoppingListInputPort {
 
             if (missing <= 0) continue; // tenemos suficiente en inventario
 
-            String foodName = foodOutputPort.findById(agg.foodId)
-                    .map(f -> f.getName())
-                    .orElse("Unknown food " + agg.foodId);
+            missingIngredients.add(new MissingIngredient(agg, available, missing));
+        }
+
+        Set<Long> foodIds = missingIngredients.stream()
+                .map(missing -> missing.ingredient.foodId)
+                .collect(Collectors.toSet());
+        Map<Long, String> foodNamesById = foodIds.isEmpty()
+                ? Map.of()
+                : foodOutputPort.findAllByIds(foodIds)
+                        .stream()
+                        .collect(Collectors.toMap(Food::getId, Food::getName));
+
+        List<ShoppingListItem> items = new ArrayList<>();
+        for (MissingIngredient missingIngredient : missingIngredients) {
+            AggregatedIngredient agg = missingIngredient.ingredient;
+            String foodName = foodNamesById.getOrDefault(agg.foodId, "Unknown food " + agg.foodId);
 
             items.add(ShoppingListItem.builder()
                     .foodId(agg.foodId)
                     .foodName(foodName)
                     .requiredQuantity(agg.quantity)
-                    .availableQuantity(available)
-                    .missingQuantity(missing)
+                    .availableQuantity(missingIngredient.available)
+                    .missingQuantity(missingIngredient.missing)
                     .unit(agg.unit)
                     .purchased(false)
                     .build());
@@ -273,6 +289,18 @@ public class ShoppingListUseCase implements ShoppingListInputPort {
             this.foodId   = foodId;
             this.quantity = quantity;
             this.unit     = unit;
+        }
+    }
+
+    private static class MissingIngredient {
+        AggregatedIngredient ingredient;
+        double available;
+        double missing;
+
+        MissingIngredient(AggregatedIngredient ingredient, double available, double missing) {
+            this.ingredient = ingredient;
+            this.available = available;
+            this.missing = missing;
         }
     }
 }

@@ -84,6 +84,44 @@ class DietJpaAdapterTest {
         verify(recipeJpaRepository).findByIdInWithIngredients(List.of(10L));
     }
 
+    @Test
+    void rangeLookupLoadsDietDaysForAllDietsInOneBatch() {
+        LocalDate from = LocalDate.of(2026, 5, 11);
+        LocalDate to = from.plusDays(6);
+        DietJpaAdapter adapter = adapter();
+        DietEntity firstDiet = dietEntity(1L, from, to);
+        DietEntity secondDiet = dietEntity(2L, from.plusDays(1), to.plusDays(1));
+        RecipeEntity firstRecipe = recipeEntity(10L);
+        RecipeEntity secondRecipe = recipeEntity(11L);
+        DietDayEntity firstDay = dietDayEntity(100L, from);
+        DietDayEntity secondDay = dietDayEntity(200L, from.plusDays(1));
+        firstDay.setDiet(firstDiet);
+        secondDay.setDiet(secondDiet);
+        firstDay.setMealSlots(List.of(mealSlotEntity(1000L, firstRecipe)));
+        secondDay.setMealSlots(List.of(mealSlotEntity(2000L, secondRecipe)));
+        Diet firstDomain = new Diet();
+        firstDomain.setId(1L);
+        Diet secondDomain = new Diet();
+        secondDomain.setId(2L);
+
+        when(dietJpaRepository.findDietsBetween(from, to)).thenReturn(List.of(firstDiet, secondDiet));
+        when(dietDayJpaRepository.findByDietIdInWithMealSlotsAndRecipe(List.of(1L, 2L)))
+                .thenReturn(List.of(firstDay, secondDay));
+        when(dietJpaMapper.toDomain(firstDiet)).thenReturn(firstDomain);
+        when(dietJpaMapper.toDomain(secondDiet)).thenReturn(secondDomain);
+
+        List<Diet> diets = adapter.findDietsByDateRange(from, to);
+
+        assertThat(diets).extracting(Diet::getId).containsExactly(1L, 2L);
+        assertThat(firstDiet.getDays()).containsExactly(firstDay);
+        assertThat(secondDiet.getDays()).containsExactly(secondDay);
+        verify(dietDayJpaRepository).findByDietIdInWithMealSlotsAndRecipe(List.of(1L, 2L));
+        verify(dietDayJpaRepository, never()).findByDietIdWithMealSlotsAndRecipe(1L);
+        verify(dietDayJpaRepository, never()).findByDietIdWithMealSlotsAndRecipe(2L);
+        verify(recipeJpaRepository).findByIdInWithIngredients(List.of(10L, 11L));
+        verify(recipeJpaRepository).findByIdInWithTags(List.of(10L, 11L));
+    }
+
     private DietJpaAdapter adapter() {
         return new DietJpaAdapter(dietJpaRepository, dietDayJpaRepository, recipeJpaRepository, dietJpaMapper);
     }

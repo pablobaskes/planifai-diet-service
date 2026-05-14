@@ -21,6 +21,17 @@ public interface DietDayJpaRepository extends JpaRepository<DietDayEntity, Long>
             ORDER BY dd.date ASC
             """)
     List<DietDayEntity> findByDietIdWithMealSlotsAndRecipe(@Param("dietId") Long dietId);
+
+    @Query("""
+            SELECT DISTINCT dd FROM DietDayEntity dd
+            JOIN FETCH dd.diet d
+            LEFT JOIN FETCH dd.mealSlots ms
+            LEFT JOIN FETCH ms.recipe
+            WHERE d.id IN :dietIds
+            ORDER BY dd.date ASC
+            """)
+    List<DietDayEntity> findByDietIdInWithMealSlotsAndRecipe(@Param("dietIds") List<Long> dietIds);
+
     List<DietDayEntity> findByDietId(Long dietId);
 
 }

@@ -8,6 +8,7 @@ import com.planing.diet_service.Recipe.infrastructure.output.jpa.repository.Reci
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,16 +22,24 @@ public class RecipeJpaAdapter implements RecipeOutputPort {
     private final RecipeJpaMapper recipeJpaMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<Recipe> findAll() {
-        return recipeJpaRepository.findAll()
+        List<RecipeEntity> recipes = recipeJpaRepository.findAllWithIngredients();
+        loadTags(recipes);
+
+        return recipes
                 .stream()
                 .map(recipeJpaMapper::toDomain)
                 .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Recipe> findById(Long id) {
-        return recipeJpaRepository.findById(id)
+        Optional<RecipeEntity> recipe = recipeJpaRepository.findByIdWithIngredients(id);
+        recipe.ifPresent(entity -> recipeJpaRepository.findByIdInWithTags(List.of(entity.getId())));
+
+        return recipe
                 .map(recipeJpaMapper::toDomain);
     }
 
@@ -49,6 +58,15 @@ public class RecipeJpaAdapter implements RecipeOutputPort {
     @Override
     public boolean existsById(Long id) {
         return recipeJpaRepository.existsById(id);
+    }
+
+    private void loadTags(List<RecipeEntity> recipes) {
+        List<Long> recipeIds = recipes.stream()
+                .map(RecipeEntity::getId)
+                .toList();
+        if (!recipeIds.isEmpty()) {
+            recipeJpaRepository.findByIdInWithTags(recipeIds);
+        }
     }
 }
 

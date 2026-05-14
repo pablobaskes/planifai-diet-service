@@ -25,7 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 @AllArgsConstructor
@@ -71,16 +74,40 @@ public class DietJpaAdapter implements DietOutputPort {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Diet> findDietsByDateRange(LocalDate from, LocalDate to) {
         List<DietEntity> dietEntities = dietJpaRepository.findDietsBetween(from, to);
+        if (dietEntities.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> dietIds = dietEntities.stream()
+                .map(DietEntity::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        Map<Long, List<DietDayEntity>> daysByDietId = dietDayJpaRepository
+                .findByDietIdInWithMealSlotsAndRecipe(dietIds)
+                .stream()
+                .collect(Collectors.groupingBy(day -> day.getDiet().getId()));
+
+        List<Long> recipeIds = daysByDietId.values().stream()
+                .flatMap(List::stream)
+                .flatMap(day -> day.getMealSlots().stream())
+                .map(MealSlotEntity::getRecipe)
+                .filter(recipe -> recipe != null && recipe.getId() != null)
+                .map(RecipeEntity::getId)
+                .distinct()
+                .toList();
+        if (!recipeIds.isEmpty()) {
+            recipeJpaRepository.findByIdInWithIngredients(recipeIds);
+            recipeJpaRepository.findByIdInWithTags(recipeIds);
+        }
+
+        dietEntities.forEach(dietEntity ->
+                dietEntity.setDays(daysByDietId.getOrDefault(dietEntity.getId(), List.of())));
 
         return dietEntities.stream()
-                .map(dietEntity -> {
-                    List<DietDayEntity> daysWithSlots = dietDayJpaRepository
-                            .findByDietIdWithMealSlotsAndRecipe(dietEntity.getId());
-                    dietEntity.setDays(daysWithSlots);
-                    return dietJpaMapper.toDomain(dietEntity);
-                })
+                .map(dietJpaMapper::toDomain)
                 .toList();
     }
 

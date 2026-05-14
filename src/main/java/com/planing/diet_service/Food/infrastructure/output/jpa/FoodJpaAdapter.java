@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,6 +43,18 @@ public class FoodJpaAdapter implements FoodOutputPort {
         }
 
         return entities.stream()
+                .map(foodJpaMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Food> findAllByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+
+        return foodJpaRepository.findAllById(ids)
+                .stream()
                 .map(foodJpaMapper::toDomain)
                 .toList();
     }

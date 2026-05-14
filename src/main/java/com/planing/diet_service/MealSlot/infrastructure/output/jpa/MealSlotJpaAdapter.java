@@ -14,6 +14,7 @@ import com.planing.diet_service.Recipe.infrastructure.output.jpa.mapper.RecipeJp
 import com.planing.diet_service.Recipe.infrastructure.output.jpa.repository.RecipeJpaRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +30,17 @@ public class MealSlotJpaAdapter implements MealSlotJpaOutputPort {
     private final DietDayJpaRepository dietDayJpaRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<Recipe> findRecipesByMealType(MealType mealType) {
-        return recipeJpaRepository.findByMealType(mealType)
+        List<RecipeEntity> recipes = recipeJpaRepository.findByMealTypeWithIngredients(mealType);
+        List<Long> recipeIds = recipes.stream()
+                .map(RecipeEntity::getId)
+                .toList();
+        if (!recipeIds.isEmpty()) {
+            recipeJpaRepository.findByIdInWithTags(recipeIds);
+        }
+
+        return recipes
                 .stream()
                 .map(recipeJpaMapper::toDomain)
                 .toList();
@@ -62,8 +72,17 @@ public class MealSlotJpaAdapter implements MealSlotJpaOutputPort {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<MealSlot> findMealSlotById(Long id) {
-        return mealSlotJpaRepository.findById(id)
+        Optional<MealSlotEntity> mealSlot = mealSlotJpaRepository.findByIdWithRecipeAndDietDay(id);
+        mealSlot.map(MealSlotEntity::getRecipe)
+                .filter(recipe -> recipe.getId() != null)
+                .ifPresent(recipe -> {
+                    recipeJpaRepository.findByIdInWithIngredients(List.of(recipe.getId()));
+                    recipeJpaRepository.findByIdInWithTags(List.of(recipe.getId()));
+                });
+
+        return mealSlot
                 .map(mealSlotJpaMapper::toDomain);
     }
 }

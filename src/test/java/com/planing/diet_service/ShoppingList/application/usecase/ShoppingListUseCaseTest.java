@@ -34,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -99,7 +100,7 @@ class ShoppingListUseCaseTest {
             when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.empty());
             when(dietOutputPort.findDietsByDateRangeForShoppingList(today, today.plusDays(6))).thenReturn(List.of(activeDiet));
             when(inventoryItemOutputPort.findAll()).thenReturn(List.of(inventory));
-            when(foodOutputPort.findById(10L)).thenReturn(Optional.of(Food.builder().id(10L).name("Rice").build()));
+            when(foodOutputPort.findAllByIds(Set.of(10L))).thenReturn(List.of(Food.builder().id(10L).name("Rice").build()));
             when(shoppingListOutputPort.save(any(ShoppingList.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             ShoppingList result = shoppingListUseCase.generateWeeklyShoppingList();
@@ -120,6 +121,32 @@ class ShoppingListUseCaseTest {
             ArgumentCaptor<ShoppingList> savedList = ArgumentCaptor.forClass(ShoppingList.class);
             verify(shoppingListOutputPort).save(savedList.capture());
             assertThat(savedList.getValue().getItems()).hasSize(1);
+            verify(foodOutputPort).findAllByIds(Set.of(10L));
+            verify(foodOutputPort, never()).findById(10L);
+        }
+
+        @Test
+        void loadsMissingFoodNamesInOneBulkLookup() {
+            LocalDate today = LocalDate.now();
+            Diet activeDiet = dietWithIngredients(today,
+                    portion(10L, 100.0, Unit.G),
+                    portion(11L, 200.0, Unit.G));
+
+            when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.empty());
+            when(dietOutputPort.findDietsByDateRangeForShoppingList(today, today.plusDays(6))).thenReturn(List.of(activeDiet));
+            when(inventoryItemOutputPort.findAll()).thenReturn(List.of());
+            when(foodOutputPort.findAllByIds(Set.of(10L, 11L))).thenReturn(List.of(
+                    Food.builder().id(10L).name("Rice").build(),
+                    Food.builder().id(11L).name("Beans").build()));
+            when(shoppingListOutputPort.save(any(ShoppingList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            ShoppingList result = shoppingListUseCase.generateWeeklyShoppingList();
+
+            assertThat(result.getItems())
+                    .extracting(ShoppingListItem::getFoodName)
+                    .containsExactlyInAnyOrder("Rice", "Beans");
+            verify(foodOutputPort).findAllByIds(Set.of(10L, 11L));
+            verify(foodOutputPort, never()).findById(any());
         }
 
         @Test
