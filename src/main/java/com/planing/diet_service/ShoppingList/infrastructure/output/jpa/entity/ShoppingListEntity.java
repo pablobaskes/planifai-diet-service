@@ -11,7 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "shopping_lists")
+@Table(
+        name = "shopping_lists",
+        uniqueConstraints = @UniqueConstraint(name = "uk_shopping_lists_week_diet", columnNames = {"week_start", "diet_id"})
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,6 +24,10 @@ public class ShoppingListEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "diet_id")
+    private Long dietId;
+
+    @Column(name = "week_start")
     private LocalDate weekStart;
 
     @Enumerated(EnumType.STRING)

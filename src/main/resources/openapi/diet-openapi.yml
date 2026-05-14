@@ -557,11 +557,14 @@ paths:
   # ─────────────────────────────────────────
   # SHOPPING LISTS
   # ─────────────────────────────────────────
-  /api/v1/shopping-lists/generate:
+  /api/v1/diets/{dietId}/shopping-lists/generate:
+    parameters:
+      - $ref: '#/components/parameters/DietId'
+
     post:
       tags: [ ShoppingLists ]
       operationId: generateWeeklyShoppingList
-      summary: Generar la lista de la compra de los próximos 7 días
+      summary: Generar la lista de la compra de los próximos 7 días para una dieta
       responses:
         '200':
           description: Lista de la compra generada o existente
@@ -571,8 +574,6 @@ paths:
                 $ref: '#/components/schemas/ShoppingListResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
 
   /api/v1/shopping-lists/current:
     get:

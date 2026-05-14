@@ -4,7 +4,7 @@ import com.planing.diet_service.ShoppingList.domain.model.ShoppingList;
 
 public interface ShoppingListInputPort {
 
-    ShoppingList generateWeeklyShoppingList();
+    ShoppingList generateWeeklyShoppingList(Long dietId);
 
     ShoppingList getCurrentShoppingList();
 

@@ -2,8 +2,6 @@ package com.planing.diet_service.ShoppingList.application.usecase;
 
 
 import com.planing.diet_service.Diet.application.ports.output.DietOutputPort;
-import com.planing.diet_service.Diet.domain.exception.MultipleActiveDietsFoundException;
-import com.planing.diet_service.Diet.domain.exception.NoActiveDietFoundException;
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Food.application.ports.output.FoodOutputPort;
 import com.planing.diet_service.FoodPortion.domain.model.FoodPortion;
@@ -29,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -46,13 +45,13 @@ public class ShoppingListUseCase implements ShoppingListInputPort {
     // Si ya existe para hoy, devuelve la existente.
     // ─────────────────────────────────────────────────────────
     @Override
-    public ShoppingList generateWeeklyShoppingList() {
+    public ShoppingList generateWeeklyShoppingList(Long dietId) {
         LocalDate today   = LocalDate.now();
         LocalDate weekEnd = today.plusDays(6);
 
         // Idempotencia: si ya existe, devolver la existente
-        return shoppingListOutputPort.findCurrentByWeekStart(today)
-                .orElseGet(() -> generateNew(today, weekEnd));
+        return shoppingListOutputPort.findByWeekStartAndDietId(today, dietId)
+                .orElseGet(() -> generateNew(dietId, today, weekEnd));
     }
 
     @Override
@@ -117,16 +116,17 @@ public class ShoppingListUseCase implements ShoppingListInputPort {
     // Generación interna de la lista
     // ─────────────────────────────────────────────────────────
 
-    private ShoppingList generateNew(LocalDate today, LocalDate weekEnd) {
-        log.info("Generating new shopping list for week {} - {}", today, weekEnd);
+    private ShoppingList generateNew(Long dietId, LocalDate today, LocalDate weekEnd) {
+        log.info("Generating new shopping list for diet {} and week {} - {}", dietId, today, weekEnd);
 
-        Diet diet = resolveActiveDiet(today, weekEnd);
+        Diet diet = resolveDiet(dietId);
         List<FoodPortion> allIngredients = extractIngredients(diet, today, weekEnd);
         Map<String, AggregatedIngredient> aggregated = aggregateIngredients(allIngredients);
         List<InventoryItem> inventory = inventoryItemOutputPort.findAll();
         List<ShoppingListItem> items = buildShoppingItems(aggregated, inventory);
 
         ShoppingList shoppingList = ShoppingList.builder()
+                .dietId(dietId)
                 .weekStart(today)
                 .status(ShoppingListStatus.PENDING)
                 .items(items)
@@ -135,16 +135,9 @@ public class ShoppingListUseCase implements ShoppingListInputPort {
         return shoppingListOutputPort.save(shoppingList);
     }
 
-    private Diet resolveActiveDiet(LocalDate from, LocalDate to) {
-        List<Diet> diets = dietOutputPort.findDietsByDateRangeForShoppingList(from, to);
-
-        if (diets.isEmpty()) {
-            throw new NoActiveDietFoundException();
-        }
-        if (diets.size() > 1) {
-            throw new MultipleActiveDietsFoundException(diets.size());
-        }
-        return diets.get(0);
+    private Diet resolveDiet(Long dietId) {
+        return dietOutputPort.findDietByIdForShoppingList(dietId)
+                .orElseThrow(() -> new NoSuchElementException("Diet not found with id: " + dietId));
     }
 
     private List<FoodPortion> extractIngredients(Diet diet, LocalDate from, LocalDate to) {

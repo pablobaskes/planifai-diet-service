@@ -15,10 +15,10 @@ public class ShoppingListRestAdapter implements ShoppingListsApi {
     private final ShoppingListRestMapper shoppingListRestMapper;
 
     @Override
-    public ResponseEntity<ShoppingListResponse> generateWeeklyShoppingList() {
+    public ResponseEntity<ShoppingListResponse> generateWeeklyShoppingList(Long dietId) {
         return ResponseEntity.ok(
                 shoppingListRestMapper.toResponse(
-                        shoppingListInputPort.generateWeeklyShoppingList()
+                        shoppingListInputPort.generateWeeklyShoppingList(dietId)
                 )
         );
     }

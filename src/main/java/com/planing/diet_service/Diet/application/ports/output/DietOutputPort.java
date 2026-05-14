@@ -20,6 +20,7 @@ public interface DietOutputPort {
     boolean dietExistsById(Long id);
     List<Diet> findDietsByDateRange(LocalDate from, LocalDate to);
     List<Diet> findDietsByDateRangeForShoppingList(LocalDate from, LocalDate to);
+    Optional<Diet> findDietByIdForShoppingList(Long dietId);
 
     // ── DietDay ───────────────────────────
     List<DietDay> findDaysByDietId(Long dietId);
