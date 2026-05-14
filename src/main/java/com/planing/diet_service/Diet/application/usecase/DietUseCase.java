@@ -2,6 +2,7 @@ package com.planing.diet_service.Diet.application.usecase;
 
 import com.planing.diet_service.Diet.application.ports.input.DietInputPort;
 import com.planing.diet_service.Diet.application.ports.output.DietOutputPort;
+import com.planing.diet_service.Diet.domain.exception.OverlappingDietException;
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Diet.domain.model.DietDay;
 import com.planing.diet_service.MealSlot.application.ports.output.MealSlotJpaOutputPort;
@@ -46,6 +47,9 @@ public class DietUseCase implements DietInputPort {
     public Diet createDiet(Diet diet) {
         log.info("Creating diet: {} from {} to {}", diet.getName(), diet.getInitDate(), diet.getEndDate());
         diet.validate();
+        if (!dietOutputPort.findDietsByDateRange(diet.getInitDate(), diet.getEndDate()).isEmpty()) {
+            throw new OverlappingDietException(diet.getInitDate(), diet.getEndDate());
+        }
         Diet savedDiet = dietOutputPort.saveDiet(diet);
         savedDiet.setDays(generateDietDays(savedDiet));
         return savedDiet;

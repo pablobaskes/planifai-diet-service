@@ -2,6 +2,7 @@ package com.planing.diet_service.common.exception;
 
 import com.planing.diet_service.Diet.domain.exception.MultipleActiveDietsFoundException;
 import com.planing.diet_service.Diet.domain.exception.NoActiveDietFoundException;
+import com.planing.diet_service.Diet.domain.exception.OverlappingDietException;
 import com.planing.diet_service.Food.domain.exception.FoodNotFoundException;
 import com.planing.diet_service.ShoppingList.domain.exception.ShoppingListItemAlreadyPurchasedException;
 import com.planing.diet_service.ShoppingList.domain.exception.ShoppingListNotFoundException;
@@ -42,7 +43,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             ShoppingListItemAlreadyPurchasedException.class,
-            MultipleActiveDietsFoundException.class
+            MultipleActiveDietsFoundException.class,
+            OverlappingDietException.class
     })
     public ResponseEntity<ErrorResponse> handleShoppingListConflict(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

@@ -4,6 +4,8 @@ import com.planing.diet.dto.ShoppingListItemResponse;
 import com.planing.diet.dto.ShoppingListResponse;
 import com.planing.diet.dto.ShoppingListStatus;
 import com.planing.diet.dto.Unit;
+import com.planing.diet_service.Diet.domain.exception.MultipleActiveDietsFoundException;
+import com.planing.diet_service.Diet.domain.exception.NoActiveDietFoundException;
 import com.planing.diet_service.ShoppingList.application.ports.input.ShoppingListInputPort;
 import com.planing.diet_service.ShoppingList.domain.exception.ShoppingListItemAlreadyPurchasedException;
 import com.planing.diet_service.ShoppingList.domain.exception.ShoppingListNotFoundException;
@@ -21,7 +23,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.verify;
@@ -52,22 +53,22 @@ class ShoppingListRestAdapterTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/diets/{dietId}/shopping-lists/generate returns generated list")
+    @DisplayName("POST /api/v1/shopping-lists/generate returns generated list")
     void generateWeeklyShoppingListReturnsGeneratedList() throws Exception {
         ShoppingList domain = domainList();
         ShoppingListResponse response = response(ShoppingListStatus.PENDING, false);
 
-        when(shoppingListInputPort.generateWeeklyShoppingList(42L)).thenReturn(domain);
+        when(shoppingListInputPort.generateWeeklyShoppingList()).thenReturn(domain);
         when(shoppingListRestMapper.toResponse(domain)).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/diets/{dietId}/shopping-lists/generate", 42L))
+        mockMvc.perform(post("/api/v1/shopping-lists/generate"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.status").value("PENDING"))
                 .andExpect(jsonPath("$.items", hasSize(1)))
                 .andExpect(jsonPath("$.items[0].missingQuantity").value(1500.0));
 
-        verify(shoppingListInputPort).generateWeeklyShoppingList(42L);
+        verify(shoppingListInputPort).generateWeeklyShoppingList();
     }
 
     @Test
@@ -122,16 +123,27 @@ class ShoppingListRestAdapterTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/diets/{dietId}/shopping-lists/generate maps missing diet to 404")
-    void generateWeeklyShoppingListMapsMissingDietTo404() throws Exception {
-        when(shoppingListInputPort.generateWeeklyShoppingList(99L))
-                .thenThrow(new NoSuchElementException("Diet not found with id: 99"));
+    @DisplayName("POST /api/v1/shopping-lists/generate maps no active diet to 404")
+    void generateWeeklyShoppingListMapsNoActiveDietTo404() throws Exception {
+        when(shoppingListInputPort.generateWeeklyShoppingList()).thenThrow(new NoActiveDietFoundException());
 
-        mockMvc.perform(post("/api/v1/diets/{dietId}/shopping-lists/generate", 99L))
+        mockMvc.perform(post("/api/v1/shopping-lists/generate"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("Not Found"))
-                .andExpect(jsonPath("$.message").value("Diet not found with id: 99"));
+                .andExpect(jsonPath("$.message").value("No active diet found for the current week. Please create a diet first."));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/shopping-lists/generate keeps defensive multiple active diets conflict")
+    void generateWeeklyShoppingListMapsMultipleActiveDietsTo409() throws Exception {
+        when(shoppingListInputPort.generateWeeklyShoppingList()).thenThrow(new MultipleActiveDietsFoundException(2));
+
+        mockMvc.perform(post("/api/v1/shopping-lists/generate"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("Conflict"))
+                .andExpect(jsonPath("$.message").value("Expected exactly one active diet but found 2. Please ensure only one diet is active per week."));
     }
 
     @Test
@@ -187,7 +199,6 @@ class ShoppingListRestAdapterTest {
     private ShoppingList domainList() {
         return ShoppingList.builder()
                 .id(1L)
-                .dietId(42L)
                 .weekStart(LocalDate.now())
                 .status(com.planing.diet_service.ShoppingList.domain.model.ShoppingListStatus.PENDING)
                 .build();

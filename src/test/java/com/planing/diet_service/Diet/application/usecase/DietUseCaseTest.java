@@ -1,6 +1,7 @@
 package com.planing.diet_service.Diet.application.usecase;
 
 import com.planing.diet_service.Diet.application.ports.output.DietOutputPort;
+import com.planing.diet_service.Diet.domain.exception.OverlappingDietException;
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Diet.domain.model.DietDay;
 import com.planing.diet_service.MealSlot.application.ports.output.MealSlotJpaOutputPort;
@@ -48,6 +49,7 @@ class DietUseCaseTest {
         Diet requested = new Diet(null, "Wave 1 Diet", "Generated", 2000, initDate, initDate.plusDays(1), List.of());
         Diet saved = new Diet(1L, "Wave 1 Diet", "Generated", 2000, initDate, initDate.plusDays(1), List.of());
 
+        when(dietOutputPort.findDietsByDateRange(initDate, initDate.plusDays(1))).thenReturn(List.of());
         when(dietOutputPort.saveDiet(requested)).thenReturn(saved);
         when(dietOutputPort.saveDietDay(any(DietDay.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(mealSlotJpaOutputPort.saveMealSlot(any(MealSlot.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -76,6 +78,42 @@ class DietUseCaseTest {
         verify(dietOutputPort).saveDiet(requested);
         verify(dietOutputPort, org.mockito.Mockito.times(2)).saveDietDay(any(DietDay.class));
         verify(mealSlotJpaOutputPort, org.mockito.Mockito.times(6)).saveMealSlot(any(MealSlot.class));
+    }
+
+    @Test
+    void createDietRejectsOverlappingExistingDiet() {
+        LocalDate initDate = LocalDate.of(2026, 5, 11);
+        Diet requested = new Diet(null, "New Diet", "Generated", 2000, initDate, initDate.plusDays(6), List.of());
+        Diet existing = new Diet(1L, "Existing Diet", "Generated", 2000, initDate.minusDays(1), initDate.plusDays(2), List.of());
+
+        when(dietOutputPort.findDietsByDateRange(initDate, initDate.plusDays(6))).thenReturn(List.of(existing));
+
+        assertThatThrownBy(() -> dietUseCase.createDiet(requested))
+                .isInstanceOf(OverlappingDietException.class)
+                .hasMessageContaining("already exists overlapping");
+
+        verify(dietOutputPort, never()).saveDiet(any());
+        verify(mealSlotJpaOutputPort, never()).saveMealSlot(any());
+    }
+
+    @Test
+    void createDietAllowsNonOverlappingDiet() {
+        LocalDate initDate = LocalDate.of(2026, 5, 18);
+        Diet requested = new Diet(null, "Wave 1 Diet", "Generated", 2000, initDate, initDate, List.of());
+        Diet saved = new Diet(2L, "Wave 1 Diet", "Generated", 2000, initDate, initDate, List.of());
+
+        when(dietOutputPort.findDietsByDateRange(initDate, initDate)).thenReturn(List.of());
+        when(dietOutputPort.saveDiet(requested)).thenReturn(saved);
+        when(dietOutputPort.saveDietDay(any(DietDay.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(mealSlotJpaOutputPort.findRecipesByMealType(MealType.BREAKFAST)).thenReturn(List.of());
+        when(mealSlotJpaOutputPort.findRecipesByMealType(MealType.LUNCH)).thenReturn(List.of());
+        when(mealSlotJpaOutputPort.findRecipesByMealType(MealType.DINNER)).thenReturn(List.of());
+
+        Diet result = dietUseCase.createDiet(requested);
+
+        assertThat(result.getId()).isEqualTo(2L);
+        assertThat(result.getDays()).hasSize(1);
+        verify(dietOutputPort).saveDiet(requested);
     }
 
     @Test

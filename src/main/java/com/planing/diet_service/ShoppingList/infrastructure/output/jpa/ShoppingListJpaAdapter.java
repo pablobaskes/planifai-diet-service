@@ -29,12 +29,6 @@ public class ShoppingListJpaAdapter implements ShoppingListOutputPort {
     }
 
     @Override
-    public Optional<ShoppingList> findByWeekStartAndDietId(LocalDate weekStart, Long dietId) {
-        return shoppingListJpaRepository.findByWeekStartAndDietId(weekStart, dietId)
-                .map(shoppingListJpaMapper::toDomain);
-    }
-
-    @Override
     public ShoppingList save(ShoppingList shoppingList) {
         ShoppingListEntity entity = shoppingListJpaMapper.toEntity(shoppingList);
 

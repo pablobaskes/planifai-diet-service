@@ -10,8 +10,6 @@ public interface ShoppingListOutputPort {
 
     Optional<ShoppingList> findCurrentByWeekStart(LocalDate weekStart);
 
-    Optional<ShoppingList> findByWeekStartAndDietId(LocalDate weekStart, Long dietId);
-
     ShoppingList save(ShoppingList shoppingList);
 
     Optional<ShoppingList> findById(Long id);

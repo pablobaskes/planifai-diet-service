@@ -56,6 +56,8 @@ paths:
                 $ref: '#/components/schemas/DietResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /api/v1/diets/range:
     get:
@@ -557,14 +559,11 @@ paths:
   # ─────────────────────────────────────────
   # SHOPPING LISTS
   # ─────────────────────────────────────────
-  /api/v1/diets/{dietId}/shopping-lists/generate:
-    parameters:
-      - $ref: '#/components/parameters/DietId'
-
+  /api/v1/shopping-lists/generate:
     post:
       tags: [ ShoppingLists ]
       operationId: generateWeeklyShoppingList
-      summary: Generar la lista de la compra de los próximos 7 días para una dieta
+      summary: Generar la lista de la compra de los próximos 7 días
       responses:
         '200':
           description: Lista de la compra generada o existente
@@ -574,6 +573,8 @@ paths:
                 $ref: '#/components/schemas/ShoppingListResponse'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /api/v1/shopping-lists/current:
     get:

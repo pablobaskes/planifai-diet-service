@@ -15,7 +15,6 @@ import java.util.List;
 @AllArgsConstructor
 public class ShoppingList {
     private Long id;
-    private Long dietId;
     private LocalDate weekStart;
     private ShoppingListStatus status;
 

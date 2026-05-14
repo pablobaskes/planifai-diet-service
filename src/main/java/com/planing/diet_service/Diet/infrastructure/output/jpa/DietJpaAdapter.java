@@ -117,29 +117,6 @@ public class DietJpaAdapter implements DietOutputPort {
         return List.of(toShoppingDiet(dietEntity, daysWithSlots));
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Diet> findDietByIdForShoppingList(Long dietId) {
-        return dietJpaRepository.findById(dietId)
-                .map(dietEntity -> {
-                    List<DietDayEntity> daysWithSlots = dietDayJpaRepository
-                            .findByDietIdWithMealSlotsAndRecipe(dietEntity.getId());
-
-                    List<Long> recipeIds = daysWithSlots.stream()
-                            .flatMap(day -> day.getMealSlots().stream())
-                            .map(MealSlotEntity::getRecipe)
-                            .filter(recipe -> recipe != null && recipe.getId() != null)
-                            .map(RecipeEntity::getId)
-                            .distinct()
-                            .toList();
-                    if (!recipeIds.isEmpty()) {
-                        recipeJpaRepository.findByIdInWithIngredients(recipeIds);
-                    }
-
-                    return toShoppingDiet(dietEntity, daysWithSlots);
-                });
-    }
-
     // ── DietDay ───────────────────────────
 
     @Override

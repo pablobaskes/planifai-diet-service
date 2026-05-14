@@ -20,14 +20,4 @@ public interface ShoppingListJpaRepository extends JpaRepository<ShoppingListEnt
             """)
     Optional<ShoppingListEntity> findByWeekStart(@Param("weekStart") LocalDate weekStart);
 
-    @Query("""
-            SELECT sl FROM ShoppingListEntity sl
-            LEFT JOIN FETCH sl.items
-            WHERE sl.weekStart = :weekStart
-              AND sl.dietId = :dietId
-            """)
-    Optional<ShoppingListEntity> findByWeekStartAndDietId(
-            @Param("weekStart") LocalDate weekStart,
-            @Param("dietId") Long dietId
-    );
 }

@@ -2,11 +2,14 @@ package com.planing.diet_service.common.exception;
 
 import com.planing.diet_service.Diet.domain.exception.MultipleActiveDietsFoundException;
 import com.planing.diet_service.Diet.domain.exception.NoActiveDietFoundException;
+import com.planing.diet_service.Diet.domain.exception.OverlappingDietException;
 import com.planing.diet_service.ShoppingList.domain.exception.ShoppingListItemAlreadyPurchasedException;
 import com.planing.diet_service.ShoppingList.domain.exception.ShoppingListNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,6 +47,16 @@ class GlobalExceptionHandlerTest {
                 handler.handleShoppingListConflict(new MultipleActiveDietsFoundException(2));
 
         assertError(response, HttpStatus.CONFLICT, "Conflict", "Expected exactly one active diet");
+    }
+
+    @Test
+    void mapsOverlappingDietTo409() {
+        ResponseEntity<GlobalExceptionHandler.ErrorResponse> response =
+                handler.handleShoppingListConflict(new OverlappingDietException(
+                        LocalDate.of(2026, 5, 11),
+                        LocalDate.of(2026, 5, 17)));
+
+        assertError(response, HttpStatus.CONFLICT, "Conflict", "already exists overlapping");
     }
 
     private void assertError(

@@ -27,7 +27,7 @@ class OpenApiWave1ContractRegressionTest {
 
     @Test
     void openApiKeepsCriticalWave1OperationsAndResponses() {
-        assertOperation("/api/v1/diets", "post", "createDiet", "201", "400");
+        assertOperation("/api/v1/diets", "post", "createDiet", "201", "400", "409");
         assertOperation("/api/v1/diets/range", "get", "getDietsByDateRange", "200", "400");
 
         assertOperation("/api/v1/meal-slots/{slotId}/recipe", "patch", "overrideMealSlotRecipe", "200", "400", "404");
@@ -50,7 +50,7 @@ class OpenApiWave1ContractRegressionTest {
         assertOperation("/api/v1/inventory/{itemId}", "put", "updateInventoryItem", "200", "400", "404");
         assertOperation("/api/v1/inventory/{itemId}", "delete", "deleteInventoryItem", "204", "404");
 
-        assertOperation("/api/v1/diets/{dietId}/shopping-lists/generate", "post", "generateWeeklyShoppingList", "200", "404");
+        assertOperation("/api/v1/shopping-lists/generate", "post", "generateWeeklyShoppingList", "200", "404", "409");
         assertOperation("/api/v1/shopping-lists/current", "get", "getCurrentShoppingList", "200", "404");
         assertOperation("/api/v1/shopping-lists/items/{itemId}/purchase", "patch", "purchaseShoppingListItem", "200", "404", "409");
         assertOperation("/api/v1/shopping-lists/purchase-all", "patch", "purchaseAllShoppingListItems", "200", "404");

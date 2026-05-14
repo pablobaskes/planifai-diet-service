@@ -3,6 +3,7 @@ package com.planing.diet_service.Diet.infrastructure.input.rest;
 import com.planing.diet.dto.DietRequest;
 import com.planing.diet.dto.DietResponse;
 import com.planing.diet_service.Diet.application.ports.input.DietInputPort;
+import com.planing.diet_service.Diet.domain.exception.OverlappingDietException;
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Diet.infrastructure.input.rest.mapper.DietRestMapper;
 import com.planing.diet_service.common.exception.GlobalExceptionHandler;
@@ -42,6 +43,33 @@ class DietRestAdapterMvpTest {
         mockMvc = MockMvcBuilders.standaloneSetup(adapter)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/diets maps overlapping active diet to 409")
+    void createDietMapsOverlappingDietTo409() throws Exception {
+        LocalDate initDate = LocalDate.of(2026, 5, 11);
+        LocalDate endDate = LocalDate.of(2026, 5, 17);
+        Diet domainRequest = diet(null, "Overlapping", initDate, endDate);
+
+        when(dietRestMapper.toDomain(any(DietRequest.class))).thenReturn(domainRequest);
+        when(dietInputPort.createDiet(domainRequest))
+                .thenThrow(new OverlappingDietException(initDate, endDate));
+
+        mockMvc.perform(post("/api/v1/diets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Overlapping",
+                                  "caloriesTarget": 2000,
+                                  "initDate": "2026-05-11",
+                                  "endDate": "2026-05-17"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("Conflict"))
+                .andExpect(jsonPath("$.message").value("A diet already exists overlapping the requested range 2026-05-11 to 2026-05-17. Delete the existing diet before creating a new overlapping diet."));
     }
 
     @Test

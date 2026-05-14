@@ -1,6 +1,8 @@
 package com.planing.diet_service.ShoppingList.application.usecase;
 
 import com.planing.diet_service.Diet.application.ports.output.DietOutputPort;
+import com.planing.diet_service.Diet.domain.exception.MultipleActiveDietsFoundException;
+import com.planing.diet_service.Diet.domain.exception.NoActiveDietFoundException;
 import com.planing.diet_service.Diet.domain.model.Diet;
 import com.planing.diet_service.Diet.domain.model.DietDay;
 import com.planing.diet_service.Food.application.ports.output.FoodOutputPort;
@@ -31,7 +33,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,12 +79,12 @@ class ShoppingListUseCaseTest {
             LocalDate today = LocalDate.now();
             ShoppingList existing = shoppingList(1L, today, ShoppingListStatus.PENDING, List.of());
 
-            when(shoppingListOutputPort.findByWeekStartAndDietId(today, 1L)).thenReturn(Optional.of(existing));
+            when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.of(existing));
 
-            ShoppingList result = shoppingListUseCase.generateWeeklyShoppingList(1L);
+            ShoppingList result = shoppingListUseCase.generateWeeklyShoppingList();
 
             assertThat(result).isSameAs(existing);
-            verify(shoppingListOutputPort).findByWeekStartAndDietId(today, 1L);
+            verify(shoppingListOutputPort).findCurrentByWeekStart(today);
             verify(shoppingListOutputPort, never()).save(any());
             verifyNoInteractions(dietOutputPort, inventoryItemOutputPort, foodOutputPort);
         }
@@ -95,15 +96,14 @@ class ShoppingListUseCaseTest {
             Diet activeDiet = dietWithIngredients(today, riceNeeded);
             InventoryItem inventory = inventoryItem(10L, 500.0, Unit.G);
 
-            when(shoppingListOutputPort.findByWeekStartAndDietId(today, 1L)).thenReturn(Optional.empty());
-            when(dietOutputPort.findDietByIdForShoppingList(1L)).thenReturn(Optional.of(activeDiet));
+            when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.empty());
+            when(dietOutputPort.findDietsByDateRangeForShoppingList(today, today.plusDays(6))).thenReturn(List.of(activeDiet));
             when(inventoryItemOutputPort.findAll()).thenReturn(List.of(inventory));
             when(foodOutputPort.findById(10L)).thenReturn(Optional.of(Food.builder().id(10L).name("Rice").build()));
             when(shoppingListOutputPort.save(any(ShoppingList.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            ShoppingList result = shoppingListUseCase.generateWeeklyShoppingList(1L);
+            ShoppingList result = shoppingListUseCase.generateWeeklyShoppingList();
 
-            assertThat(result.getDietId()).isEqualTo(1L);
             assertThat(result.getWeekStart()).isEqualTo(today);
             assertThat(result.getStatus()).isEqualTo(ShoppingListStatus.PENDING);
             assertThat(result.getItems()).hasSize(1);
@@ -123,35 +123,31 @@ class ShoppingListUseCaseTest {
         }
 
         @Test
-        void throwsWhenRequestedDietDoesNotExist() {
+        void throwsWhenNoActiveDietExists() {
             LocalDate today = LocalDate.now();
-            when(shoppingListOutputPort.findByWeekStartAndDietId(today, 99L)).thenReturn(Optional.empty());
-            when(dietOutputPort.findDietByIdForShoppingList(99L)).thenReturn(Optional.empty());
+            when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.empty());
+            when(dietOutputPort.findDietsByDateRangeForShoppingList(today, today.plusDays(6))).thenReturn(List.of());
 
-            assertThatThrownBy(() -> shoppingListUseCase.generateWeeklyShoppingList(99L))
-                    .isInstanceOf(NoSuchElementException.class)
-                    .hasMessageContaining("Diet not found with id: 99");
+            assertThatThrownBy(() -> shoppingListUseCase.generateWeeklyShoppingList())
+                    .isInstanceOf(NoActiveDietFoundException.class);
 
             verify(shoppingListOutputPort, never()).save(any());
             verifyNoInteractions(inventoryItemOutputPort, foodOutputPort);
         }
 
         @Test
-        void generatesFromSelectedDietWhenMultipleDietsExistForWeek() {
+        void keepsDefensiveConflictWhenExistingDataHasMultipleActiveDiets() {
             LocalDate today = LocalDate.now();
-            Diet selectedDiet = dietWithIngredients(today, portion(10L, 100.0, Unit.G));
+            when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.empty());
+            when(dietOutputPort.findDietsByDateRangeForShoppingList(today, today.plusDays(6)))
+                    .thenReturn(List.of(dietWithIngredients(today, portion(10L, 100.0, Unit.G)),
+                            dietWithIngredients(today, portion(11L, 100.0, Unit.G))));
 
-            when(shoppingListOutputPort.findByWeekStartAndDietId(today, 2L)).thenReturn(Optional.empty());
-            when(dietOutputPort.findDietByIdForShoppingList(2L)).thenReturn(Optional.of(selectedDiet));
-            when(inventoryItemOutputPort.findAll()).thenReturn(List.of());
-            when(foodOutputPort.findById(10L)).thenReturn(Optional.of(Food.builder().id(10L).name("Rice").build()));
-            when(shoppingListOutputPort.save(any(ShoppingList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            assertThatThrownBy(() -> shoppingListUseCase.generateWeeklyShoppingList())
+                    .isInstanceOf(MultipleActiveDietsFoundException.class);
 
-            ShoppingList result = shoppingListUseCase.generateWeeklyShoppingList(2L);
-
-            assertThat(result.getDietId()).isEqualTo(2L);
-            verify(dietOutputPort).findDietByIdForShoppingList(2L);
-            verify(dietOutputPort, never()).findDietsByDateRangeForShoppingList(any(), any());
+            verify(shoppingListOutputPort, never()).save(any());
+            verifyNoInteractions(inventoryItemOutputPort, foodOutputPort);
         }
     }
 
@@ -333,7 +329,6 @@ class ShoppingListUseCaseTest {
     private ShoppingList shoppingList(Long id, LocalDate weekStart, ShoppingListStatus status, List<ShoppingListItem> items) {
         return ShoppingList.builder()
                 .id(id)
-                .dietId(1L)
                 .weekStart(weekStart)
                 .status(status)
                 .items(items)
