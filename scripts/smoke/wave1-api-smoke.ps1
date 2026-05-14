@@ -145,6 +145,7 @@ function New-Food {
 function New-Recipe {
     param(
         [string] $Name,
+        [string] $MealType,
         [long] $FoodId,
         [double] $Quantity,
         [string] $Unit
@@ -152,6 +153,7 @@ function New-Recipe {
 
     $response = Invoke-SmokeRequest POST "/recipes" @{
         name = $Name
+        mealType = $MealType
         ingredients = @(
             @{
                 foodId = $FoodId
@@ -202,6 +204,25 @@ function Find-MealSlotById {
     return $null
 }
 
+function Find-MealSlotByType {
+    param(
+        [object[]] $Diets,
+        [string] $Type
+    )
+
+    foreach ($diet in @($Diets)) {
+        foreach ($day in @($diet.days)) {
+            foreach ($slot in @($day.mealSlots)) {
+                if ($null -ne $slot -and $slot.type -eq $Type) {
+                    return $slot
+                }
+            }
+        }
+    }
+
+    return $null
+}
+
 Write-Step "Using API base URL: $BaseUrl"
 Invoke-SmokeRequest GET "/foods" $null @(200) | Out-Null
 
@@ -215,9 +236,9 @@ $rice = New-Food "Smoke Rice $suffix" "GRAIN" 365.0 7.0 80.0 0.7
 $egg = New-Food "Smoke Egg $suffix" "DAIRY" 155.0 13.0 1.1 11.0
 
 Write-Step "Creating recipes"
-$recipeA = New-Recipe "Smoke Chicken Recipe $suffix" $chicken.id 200.0 "G"
-$recipeB = New-Recipe "Smoke Rice Recipe $suffix" $rice.id 500.0 "G"
-$recipeC = New-Recipe "Smoke Egg Recipe $suffix" $egg.id 2.0 "UNIT"
+$recipeA = New-Recipe "Smoke Egg Breakfast Recipe $suffix" "BREAKFAST" $egg.id 2.0 "UNIT"
+$recipeB = New-Recipe "Smoke Chicken Lunch Recipe $suffix" "LUNCH" $chicken.id 200.0 "G"
+$recipeC = New-Recipe "Smoke Rice Dinner Recipe $suffix" "DINNER" $rice.id 500.0 "G"
 
 Write-Step "Creating inventory item"
 $inventory = Invoke-SmokeRequest POST "/inventory" @{
@@ -246,12 +267,12 @@ $diets = @($range.Body)
 $createdDiet = $diets | Where-Object { $_.id -eq $diet.Body.id } | Select-Object -First 1
 Assert-Condition ($null -ne $createdDiet) "created diet was not returned by range endpoint"
 
-$slot = Get-FirstMealSlot @($createdDiet)
+$slot = Find-MealSlotByType @($createdDiet) "LUNCH"
 if ($null -eq $slot) {
     throw @"
-No meal slot was generated for the created diet, so the API-only smoke cannot continue to slot override/shopping-list completion.
+No LUNCH meal slot was generated for the created diet, so the API-only smoke cannot continue to slot override/shopping-list completion.
 This is an implementation blocker for W1-E7-T3 when starting from a clean API-created dataset.
-Observed constraint: RecipeRequest does not expose mealType, while diet generation selects recipe candidates by MealType.
+Observed constraint: API-created recipes with mealType must be eligible for generated MealType slots.
 "@
 }
 
@@ -277,12 +298,12 @@ $firstItem = $items | Where-Object { $_.purchased -eq $false } | Select-Object -
 Assert-Condition ($null -ne $firstItem) "shopping list has no pending item to purchase"
 
 Write-Step "Purchasing shopping list item $($firstItem.id)"
-$purchaseOne = Invoke-SmokeRequest POST "/shopping-lists/items/$($firstItem.id)/purchase" $null @(200)
+$purchaseOne = Invoke-SmokeRequest PATCH "/shopping-lists/items/$($firstItem.id)/purchase" $null @(200)
 $purchasedItem = @($purchaseOne.Body.items) | Where-Object { $_.id -eq $firstItem.id } | Select-Object -First 1
 Assert-Condition ($purchasedItem.purchased -eq $true) "item $($firstItem.id) was not marked as purchased"
 
 Write-Step "Purchasing all remaining items"
-$purchaseAll = Invoke-SmokeRequest POST "/shopping-lists/purchase-all" $null @(200)
+$purchaseAll = Invoke-SmokeRequest PATCH "/shopping-lists/purchase-all" $null @(200)
 $remaining = @($purchaseAll.Body.items) | Where-Object { $_.purchased -ne $true }
 Assert-Condition ($remaining.Count -eq 0) "not all shopping list items were marked as purchased"
 Assert-Condition ($purchaseAll.Body.status -eq "COMPLETED") "shopping list status is not COMPLETED"

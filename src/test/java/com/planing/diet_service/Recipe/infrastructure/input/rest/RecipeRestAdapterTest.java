@@ -3,6 +3,7 @@ package com.planing.diet_service.Recipe.infrastructure.input.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planing.diet.dto.FoodPortionDto;
 import com.planing.diet.dto.MeasureUnit;
+import com.planing.diet.dto.MealType;
 import com.planing.diet.dto.NutritionSummaryDto;
 import com.planing.diet.dto.RecipeRequest;
 import com.planing.diet.dto.RecipeResponse;
@@ -117,6 +118,7 @@ class RecipeRestAdapterTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.mealType").value("LUNCH"))
                 .andExpect(jsonPath("$.nutritionSummary.totalCalories").value(695.0))
                 .andExpect(jsonPath("$.nutritionSummary.totalFat").value(7.9));
     }
@@ -183,6 +185,7 @@ class RecipeRestAdapterTest {
     private RecipeRequest request(String name) {
         return new RecipeRequest()
                 .name(name)
+                .mealType(MealType.LUNCH)
                 .ingredients(List.of(new FoodPortionDto()
                         .foodId(1L)
                         .quantity(200.0)
@@ -194,6 +197,7 @@ class RecipeRestAdapterTest {
         return new RecipeResponse()
                 .id(id)
                 .name(name)
+                .mealType(MealType.LUNCH)
                 .ingredients(List.of(new FoodPortionDto()
                         .foodId(1L)
                         .quantity(200.0)

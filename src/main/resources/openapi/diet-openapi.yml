@@ -969,6 +969,8 @@ components:
         name:
           type: string
           example: Ensalada de pollo
+        mealType:
+          $ref: '#/components/schemas/MealType'
         ingredients:
           type: array
           minItems: 1
@@ -992,6 +994,8 @@ components:
         name:
           type: string
           example: Ensalada de pollo
+        mealType:
+          $ref: '#/components/schemas/MealType'
         ingredients:
           type: array
           items:

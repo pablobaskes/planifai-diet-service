@@ -23,5 +23,15 @@ public interface DietJpaRepository extends JpaRepository<DietEntity, Long> {
             @Param("from") LocalDate from,
             @Param("to") LocalDate to
     );
-}
 
+    @Query("""
+            SELECT d.id FROM DietEntity d
+            WHERE d.initDate <= :to
+              AND d.endDate >= :from
+            ORDER BY d.initDate ASC
+            """)
+    List<Long> findDietIdsBetween(
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to
+    );
+}

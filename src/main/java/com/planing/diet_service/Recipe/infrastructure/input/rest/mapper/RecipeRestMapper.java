@@ -47,4 +47,16 @@ public interface RecipeRestMapper {
         if (unit == null) return null;
         return MeasureUnit.valueOf(unit.name());
     }
+
+    default com.planing.diet_service.MealSlot.domain.utils.MealType mapMealType(
+            com.planing.diet.dto.MealType mealType) {
+        if (mealType == null) return null;
+        return com.planing.diet_service.MealSlot.domain.utils.MealType.valueOf(mealType.name());
+    }
+
+    default com.planing.diet.dto.MealType mapMealType(
+            com.planing.diet_service.MealSlot.domain.utils.MealType mealType) {
+        if (mealType == null) return null;
+        return com.planing.diet.dto.MealType.valueOf(mealType.name());
+    }
 }

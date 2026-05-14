@@ -97,7 +97,7 @@ class ShoppingListUseCaseTest {
             InventoryItem inventory = inventoryItem(10L, 500.0, Unit.G);
 
             when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.empty());
-            when(dietOutputPort.findDietsByDateRange(today, today.plusDays(6))).thenReturn(List.of(activeDiet));
+            when(dietOutputPort.findDietsByDateRangeForShoppingList(today, today.plusDays(6))).thenReturn(List.of(activeDiet));
             when(inventoryItemOutputPort.findAll()).thenReturn(List.of(inventory));
             when(foodOutputPort.findById(10L)).thenReturn(Optional.of(Food.builder().id(10L).name("Rice").build()));
             when(shoppingListOutputPort.save(any(ShoppingList.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -126,7 +126,7 @@ class ShoppingListUseCaseTest {
         void throwsWhenNoActiveDietExists() {
             LocalDate today = LocalDate.now();
             when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.empty());
-            when(dietOutputPort.findDietsByDateRange(today, today.plusDays(6))).thenReturn(List.of());
+            when(dietOutputPort.findDietsByDateRangeForShoppingList(today, today.plusDays(6))).thenReturn(List.of());
 
             assertThatThrownBy(() -> shoppingListUseCase.generateWeeklyShoppingList())
                     .isInstanceOf(NoActiveDietFoundException.class);
@@ -139,7 +139,7 @@ class ShoppingListUseCaseTest {
         void throwsWhenMultipleActiveDietsExist() {
             LocalDate today = LocalDate.now();
             when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.empty());
-            when(dietOutputPort.findDietsByDateRange(today, today.plusDays(6)))
+            when(dietOutputPort.findDietsByDateRangeForShoppingList(today, today.plusDays(6)))
                     .thenReturn(List.of(dietWithIngredients(today, portion(10L, 100.0, Unit.G)),
                             dietWithIngredients(today, portion(11L, 100.0, Unit.G))));
 
@@ -222,6 +222,43 @@ class ShoppingListUseCaseTest {
             assertThat(result.getStatus()).isEqualTo(ShoppingListStatus.COMPLETED);
             assertThat(existingInventory.getPortion().getQuantity()).isEqualTo(1.5);
             verify(inventoryItemOutputPort).save(existingInventory);
+        }
+
+        @Test
+        void marksMatchingCurrentListItemWhenLoadedItemIsDetached() {
+            LocalDate today = LocalDate.now();
+            ShoppingListItem loadedItem = item(1L, 10L, 2.0, Unit.G, false);
+            ShoppingListItem currentListItem = item(1L, 10L, 2.0, Unit.G, false);
+            ShoppingList current = shoppingList(1L, today, ShoppingListStatus.PENDING, List.of(currentListItem));
+
+            when(shoppingListOutputPort.findItemById(1L)).thenReturn(Optional.of(loadedItem));
+            when(inventoryItemOutputPort.findByFoodId(10L)).thenReturn(Optional.empty());
+            when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.of(current));
+            when(shoppingListOutputPort.save(any(ShoppingList.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            ShoppingList result = shoppingListUseCase.markItemAsPurchased(1L);
+
+            assertThat(loadedItem.isPurchased()).isTrue();
+            assertThat(currentListItem.isPurchased()).isTrue();
+            assertThat(result.getStatus()).isEqualTo(ShoppingListStatus.COMPLETED);
+            verify(shoppingListOutputPort).save(current);
+        }
+
+        @Test
+        void throwsWhenPurchasedItemIsNotInCurrentList() {
+            LocalDate today = LocalDate.now();
+            ShoppingListItem loadedItem = item(1L, 10L, 2.0, Unit.G, false);
+            ShoppingList current = shoppingList(1L, today, ShoppingListStatus.PENDING, List.of(item(2L, 11L, 2.0, Unit.G, false)));
+
+            when(shoppingListOutputPort.findItemById(1L)).thenReturn(Optional.of(loadedItem));
+            when(shoppingListOutputPort.findCurrentByWeekStart(today)).thenReturn(Optional.of(current));
+
+            assertThatThrownBy(() -> shoppingListUseCase.markItemAsPurchased(1L))
+                    .isInstanceOf(ShoppingListNotFoundException.class)
+                    .hasMessageContaining("not found in current shopping list");
+
+            verify(shoppingListOutputPort, never()).save(any());
+            verifyNoInteractions(inventoryItemOutputPort);
         }
 
         @Test

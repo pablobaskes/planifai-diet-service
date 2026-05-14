@@ -7,6 +7,7 @@ import com.planing.diet_service.Food.domain.model.Food;
 import com.planing.diet_service.Food.domain.model.FoodCategory;
 import com.planing.diet_service.FoodPortion.domain.model.FoodPortion;
 import com.planing.diet_service.FoodPortion.domain.model.Unit;
+import com.planing.diet_service.MealSlot.domain.utils.MealType;
 import com.planing.diet_service.Recipe.application.ports.output.RecipeOutputPort;
 import com.planing.diet_service.Recipe.domain.model.Recipe;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -176,6 +178,22 @@ class RecipeUseCaseTest {
             assertThat(result.getNutritionSummary().getTotalProtein()).isEqualTo(69.0);
             assertThat(result.getNutritionSummary().getTotalCarbs()).isEqualTo(80.0);
             assertThat(result.getNutritionSummary().getTotalFat()).isEqualTo(7.9);
+        }
+
+        @Test
+        @DisplayName("preserva mealType para que la receta creada por API sea candidata de generacion")
+        void preservesMealTypeForGeneratedMealSlotEligibility() {
+            Recipe recipe = buildRecipe("Desayuno API", 1,
+                    portion(1L, 100, Unit.G));
+            recipe.setMealType(MealType.BREAKFAST);
+
+            when(foodInputPort.getFoodById(1L)).thenReturn(chicken);
+            when(recipeOutputPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            Recipe result = recipeUseCase.createRecipe(recipe);
+
+            assertThat(result.getMealType()).isEqualTo(MealType.BREAKFAST);
+            verify(recipeOutputPort).save(argThat(saved -> saved.getMealType() == MealType.BREAKFAST));
         }
 
         @Test

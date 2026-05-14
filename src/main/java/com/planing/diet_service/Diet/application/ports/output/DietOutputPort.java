@@ -19,6 +19,7 @@ public interface DietOutputPort {
     void deleteDietById(Long id);
     boolean dietExistsById(Long id);
     List<Diet> findDietsByDateRange(LocalDate from, LocalDate to);
+    List<Diet> findDietsByDateRangeForShoppingList(LocalDate from, LocalDate to);
 
     // ── DietDay ───────────────────────────
     List<DietDay> findDaysByDietId(Long dietId);

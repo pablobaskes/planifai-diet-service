@@ -16,6 +16,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,6 +69,21 @@ class OpenApiWave1ContractRegressionTest {
         Map<String, Object> properties = mapAt(errorResponse, "properties");
 
         assertThat(properties.keySet()).contains("status", "error", "message", "timestamp");
+    }
+
+    @Test
+    void recipeContractExposesMealTypeForApiCreatedGenerationSeedRecipes() {
+        Map<String, Object> schemas = mapAt(mapAt(openApi, "components"), "schemas");
+        Map<String, Object> mealType = mapAt(schemas, "MealType");
+        Map<String, Object> recipeRequestProperties = mapAt(mapAt(schemas, "RecipeRequest"), "properties");
+        Map<String, Object> recipeResponseProperties = mapAt(mapAt(schemas, "RecipeResponse"), "properties");
+
+        assertThat(recipeRequestProperties.keySet()).contains("mealType");
+        assertThat(recipeResponseProperties.keySet()).contains("mealType");
+        assertThat(mapAt(recipeRequestProperties, "mealType").get("$ref")).isEqualTo("#/components/schemas/MealType");
+        assertThat(mapAt(recipeResponseProperties, "mealType").get("$ref")).isEqualTo("#/components/schemas/MealType");
+        assertThat(stringListAt(mealType, "enum"))
+                .contains("BREAKFAST", "LUNCH", "DINNER", "SNACK");
     }
 
     @Test
@@ -124,6 +140,16 @@ class OpenApiWave1ContractRegressionTest {
                 .as("OpenAPI key '%s' should exist", key)
                 .isInstanceOf(Map.class);
         return (Map<String, Object>) value;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> stringListAt(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+
+        assertThat(value)
+                .as("OpenAPI key '%s' should exist", key)
+                .isInstanceOf(List.class);
+        return (List<String>) value;
     }
 
     @SuppressWarnings("unchecked")

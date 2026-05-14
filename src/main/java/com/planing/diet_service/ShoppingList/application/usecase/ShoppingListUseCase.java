@@ -77,12 +77,19 @@ public class ShoppingListUseCase implements ShoppingListInputPort {
             throw new ShoppingListItemAlreadyPurchasedException(itemId);
         }
 
-        purchaseItem(item);
-
         // Recuperar la lista completa para recalcular estado y guardar
         ShoppingList shoppingList = shoppingListOutputPort.findCurrentByWeekStart(LocalDate.now())
                 .orElseThrow(() -> new ShoppingListNotFoundException(
                         "Shopping list not found for current week"));
+
+        ShoppingListItem currentListItem = shoppingList.getItems().stream()
+                .filter(currentItem -> itemId.equals(currentItem.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ShoppingListNotFoundException(
+                        "ShoppingListItem not found in current shopping list with id: " + itemId));
+
+        purchaseItem(item);
+        currentListItem.setPurchased(true);
 
         shoppingList.recalculateStatus();
         return shoppingListOutputPort.save(shoppingList);
@@ -129,7 +136,7 @@ public class ShoppingListUseCase implements ShoppingListInputPort {
     }
 
     private Diet resolveActiveDiet(LocalDate from, LocalDate to) {
-        List<Diet> diets = dietOutputPort.findDietsByDateRange(from, to);
+        List<Diet> diets = dietOutputPort.findDietsByDateRangeForShoppingList(from, to);
 
         if (diets.isEmpty()) {
             throw new NoActiveDietFoundException();
