@@ -10,6 +10,7 @@ import com.planing.diet_service.MealSlot.domain.utils.MealType;
 import com.planing.diet_service.Recipe.application.ports.output.RecipeOutputPort;
 import com.planing.diet_service.Recipe.domain.model.Recipe;
 import com.planing.diet_service.Recipe.infrastructure.output.jpa.entity.NutritionSummaryEmbedded;
+import com.planing.diet_service.ShoppingList.application.ports.output.ShoppingListOutputPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -39,6 +40,9 @@ class DietUseCaseTest {
 
     @Mock
     private RecipeOutputPort recipeOutputPort;
+
+    @Mock
+    private ShoppingListOutputPort shoppingListOutputPort;
 
     @InjectMocks
     private DietUseCase dietUseCase;
@@ -152,6 +156,31 @@ class DietUseCaseTest {
 
         verify(dietOutputPort, never()).saveDiet(any());
         verify(mealSlotJpaOutputPort, never()).saveMealSlot(any());
+    }
+
+    @Test
+    void deleteDietDeletesShoppingListsForDietRangeBeforeDeletingDietGraph() {
+        LocalDate initDate = LocalDate.of(2026, 5, 11);
+        Diet existing = new Diet(1L, "Wave 1 Diet", "Generated", 2000, initDate, initDate.plusDays(6), List.of());
+
+        when(dietOutputPort.findDietById(1L)).thenReturn(Optional.of(existing));
+
+        dietUseCase.deleteDiet(1L);
+
+        verify(shoppingListOutputPort).deleteByWeekStartBetween(initDate, initDate.plusDays(6));
+        verify(dietOutputPort).deleteDietById(1L);
+    }
+
+    @Test
+    void deleteDietThrowsWhenDietDoesNotExist() {
+        when(dietOutputPort.findDietById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> dietUseCase.deleteDiet(99L))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessageContaining("Diet not found");
+
+        verify(shoppingListOutputPort, never()).deleteByWeekStartBetween(any(), any());
+        verify(dietOutputPort, never()).deleteDietById(any());
     }
 
     @Test

@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,5 +20,14 @@ public interface ShoppingListJpaRepository extends JpaRepository<ShoppingListEnt
             WHERE sl.weekStart = :weekStart
             """)
     Optional<ShoppingListEntity> findByWeekStart(@Param("weekStart") LocalDate weekStart);
+
+    @Query("""
+            SELECT DISTINCT sl FROM ShoppingListEntity sl
+            LEFT JOIN FETCH sl.items
+            WHERE sl.weekStart BETWEEN :from AND :to
+            """)
+    List<ShoppingListEntity> findAllByWeekStartBetweenWithItems(
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
 
 }

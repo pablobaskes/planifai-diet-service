@@ -10,9 +10,11 @@ import com.planing.diet_service.MealSlot.domain.model.MealSlot;
 import com.planing.diet_service.MealSlot.domain.utils.MealType;
 import com.planing.diet_service.Recipe.application.ports.output.RecipeOutputPort;
 import com.planing.diet_service.Recipe.domain.model.Recipe;
+import com.planing.diet_service.ShoppingList.application.ports.output.ShoppingListOutputPort;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -27,6 +29,7 @@ public class DietUseCase implements DietInputPort {
     private final DietOutputPort dietOutputPort;
     private final MealSlotJpaOutputPort mealSlotJpaOutputPort;
     private final RecipeOutputPort recipeOutputPort;
+    private final ShoppingListOutputPort shoppingListOutputPort;
 
     // ── Diet ──────────────────────────────
 
@@ -66,11 +69,12 @@ public class DietUseCase implements DietInputPort {
     }
 
     @Override
+    @Transactional
     public void deleteDiet(Long id) {
         log.info("Deleting diet with id: {}", id);
-        if (!dietOutputPort.dietExistsById(id)) {
-            throw new NoSuchElementException("Diet not found with id: " + id);
-        }
+        Diet diet = dietOutputPort.findDietById(id)
+                .orElseThrow(() -> new NoSuchElementException("Diet not found with id: " + id));
+        shoppingListOutputPort.deleteByWeekStartBetween(diet.getInitDate(), diet.getEndDate());
         dietOutputPort.deleteDietById(id);
     }
 

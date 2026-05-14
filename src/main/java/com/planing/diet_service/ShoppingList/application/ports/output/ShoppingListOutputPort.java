@@ -17,4 +17,6 @@ public interface ShoppingListOutputPort {
     Optional<ShoppingListItem> findItemById(Long itemId);
 
     void deleteById(Long id);
+
+    void deleteByWeekStartBetween(LocalDate from, LocalDate to);
 }

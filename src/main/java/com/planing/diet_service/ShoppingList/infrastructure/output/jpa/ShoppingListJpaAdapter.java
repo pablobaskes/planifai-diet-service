@@ -10,6 +10,7 @@ import com.planing.diet_service.ShoppingList.infrastructure.output.jpa.repositor
 import com.planing.diet_service.ShoppingList.infrastructure.output.jpa.repository.ShoppingListJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -59,5 +60,12 @@ public class ShoppingListJpaAdapter implements ShoppingListOutputPort {
     @Override
     public void deleteById(Long id) {
         shoppingListJpaRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteByWeekStartBetween(LocalDate from, LocalDate to) {
+        shoppingListJpaRepository.deleteAll(
+                shoppingListJpaRepository.findAllByWeekStartBetweenWithItems(from, to));
     }
 }
