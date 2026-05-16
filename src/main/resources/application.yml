@@ -2,9 +2,9 @@ spring:
   application:
     name: diet-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/diet_db
-    username: postgres
-    password: 1234
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/diet_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:1234}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
